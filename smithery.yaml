@@ -1,0 +1,29 @@
+name: formfill-mcp
+displayName: FormFill MCP
+description: Fill any interactive PDF form from your AI agent — tax forms, HR paperwork, legal documents — in a single tool call.
+version: "1.0.0"
+license: MIT
+homepage: https://formfill.plenitudo.ai
+repository: https://github.com/knportal/formfill-mcp
+tags:
+  - pdf
+  - forms
+  - document
+  - productivity
+server:
+  type: http
+  url: https://formfill-mcp.plain-cherry-e1fe.workers.dev/mcp
+pricing:
+  free:
+    description: 50 fills/month
+    price: $0
+  pro:
+    description: Unlimited fills/month
+    price: $9.99/month
+tools:
+  - name: list_form_fields
+    description: List all fillable fields in a PDF form
+  - name: fill_form
+    description: Fill a single-page PDF form with provided field values
+  - name: fill_form_multipage
+    description: Fill a multi-page PDF form with provided field values
