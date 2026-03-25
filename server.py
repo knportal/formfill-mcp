@@ -1,0 +1,399 @@
+"""
+FormFill MCP Server — Production
+Fills PDF forms from structured field data.
+
+Every tool requires an `api_key` parameter. Keys are issued at
+https://formfill.plenitudo.ai. Free tier: 50 fills/month. Pro: unlimited.
+
+Uses file paths (not base64) to handle large PDFs without message-size issues.
+"""
+
+import json
+import logging
+import os
+import sys
+from pathlib import Path
+
+from mcp.server.fastmcp import FastMCP
+
+# ---------------------------------------------------------------------------
+# Logging — must be configured before importing auth (which also logs)
+# ---------------------------------------------------------------------------
+from config import LOG_FILE, LOG_LEVEL
+
+os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
+
+logging.basicConfig(
+    level=getattr(logging, LOG_LEVEL.upper(), logging.INFO),
+    format="%(asctime)s  %(levelname)-8s  %(name)s — %(message)s",
+    handlers=[
+        logging.FileHandler(LOG_FILE),
+        logging.StreamHandler(sys.stderr),
+    ],
+)
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Auth
+# ---------------------------------------------------------------------------
+from auth import validate_and_charge  # noqa: E402
+
+# ---------------------------------------------------------------------------
+# PDF libraries — pypdf is authoritative; we fall back gracefully
+# ---------------------------------------------------------------------------
+try:
+    from pypdf import PdfReader, PdfWriter
+    _PYPDF_OK = True
+except ImportError:  # pragma: no cover
+    _PYPDF_OK = False
+    logger.error("pypdf is not installed. Run: pip install pypdf")
+
+
+# ---------------------------------------------------------------------------
+# MCP server
+# ---------------------------------------------------------------------------
+mcp = FastMCP("FormFill", host="0.0.0.0", port=8000)
+
+
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
+
+def _auth_error(msg: str) -> str:
+    return json.dumps({"error": msg, "ok": False})
+
+
+def _resolve(pdf_path: str) -> tuple[Path | None, str | None]:
+    """Expand and validate a PDF path. Returns (path, None) or (None, error)."""
+    try:
+        p = Path(pdf_path).expanduser().resolve()
+    except Exception as exc:
+        return None, f"Invalid path: {exc}"
+    if not p.exists():
+        return None, f"File not found: {pdf_path}"
+    if not p.is_file():
+        return None, f"Path is not a file: {pdf_path}"
+    return p, None
+
+
+def _get_reader_fields(reader: "PdfReader") -> dict:
+    """Return the raw field dict from a PdfReader (may be None → empty dict)."""
+    fields = reader.get_fields()
+    return fields if fields else {}
+
+
+def _validate_fields(
+    requested: dict, available: dict
+) -> tuple[dict, list[str]]:
+    """
+    Split requested field_values into valid and invalid buckets.
+
+    Returns:
+        (valid_subset, list_of_invalid_names)
+    """
+    valid = {k: v for k, v in requested.items() if k in available}
+    invalid = [k for k in requested if k not in available]
+    return valid, invalid
+
+
+# ---------------------------------------------------------------------------
+# Tool 1 — list_form_fields
+# ---------------------------------------------------------------------------
+
+@mcp.tool()
+def list_form_fields(pdf_path: str, api_key: str) -> str:
+    """
+    List all fillable fields in a PDF form.
+
+    Args:
+        pdf_path: Absolute path to the PDF file on disk.
+        api_key:  Your FormFill API key (get one at formfill.plenitudo.ai).
+
+    Returns a JSON object with field names, types, and current values.
+    This call does NOT count against your monthly fill quota.
+    """
+    # Auth — listing fields is free, but we still require a valid key
+    ok, err = validate_and_charge.__wrapped__(api_key) if hasattr(validate_and_charge, "__wrapped__") else _validate_key_only(api_key)
+    if not ok:
+        return _auth_error(err)
+
+    if not _PYPDF_OK:
+        return _auth_error("pypdf library not available on this server.")
+
+    src, err = _resolve(pdf_path)
+    if err:
+        logger.warning("list_form_fields path error: %s", err)
+        return json.dumps({"error": err, "ok": False})
+
+    try:
+        reader = PdfReader(str(src))
+        fields = _get_reader_fields(reader)
+
+        if not fields:
+            return json.dumps({
+                "ok": False,
+                "error": "No fillable fields found in this PDF.",
+                "note": (
+                    "The PDF may be flat/scanned rather than an interactive form. "
+                    "Try opening it in Acrobat to confirm."
+                ),
+            })
+
+        field_info = {}
+        for name, field in fields.items():
+            raw_type = str(field.get("/FT", "unknown"))
+            type_map = {
+                "/Tx": "text",
+                "/Btn": "button/checkbox",
+                "/Ch": "choice/dropdown",
+                "/Sig": "signature",
+            }
+            field_info[name] = {
+                "type": type_map.get(raw_type, raw_type),
+                "current_value": str(field.get("/V", "")),
+            }
+
+        logger.info("list_form_fields: %s — %d fields", src.name, len(field_info))
+        return json.dumps(
+            {"ok": True, "field_count": len(field_info), "fields": field_info},
+            indent=2,
+        )
+
+    except Exception as exc:
+        logger.exception("list_form_fields failed for %s", pdf_path)
+        return json.dumps({"error": str(exc), "ok": False})
+
+
+def _validate_key_only(api_key: str) -> tuple[bool, str | None]:
+    """
+    Validate the API key WITHOUT charging usage (used for list_form_fields).
+    """
+    import sqlite3
+    from config import KEYS_DB
+
+    if not api_key or not isinstance(api_key, str):
+        return False, "Missing api_key parameter."
+
+    try:
+        conn = sqlite3.connect(KEYS_DB)
+        conn.row_factory = sqlite3.Row
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS api_keys (
+                key TEXT PRIMARY KEY,
+                tier TEXT NOT NULL DEFAULT 'free',
+                stripe_customer TEXT,
+                created_at TEXT NOT NULL,
+                active INTEGER NOT NULL DEFAULT 1
+            )
+            """
+        )
+        row = conn.execute(
+            "SELECT tier, active FROM api_keys WHERE key = ?", (api_key,)
+        ).fetchone()
+        conn.close()
+    except Exception as exc:
+        logger.exception("Key DB error")
+        return False, f"Auth service error: {exc}"
+
+    if row is None:
+        return False, (
+            "Invalid API key. Generate a free key at https://formfill.plenitudo.ai"
+        )
+    if not row["active"]:
+        return False, "This API key has been deactivated. Visit formfill.plenitudo.ai."
+
+    return True, None
+
+
+# ---------------------------------------------------------------------------
+# Tool 2 — fill_form
+# ---------------------------------------------------------------------------
+
+@mcp.tool()
+def fill_form(
+    pdf_path: str,
+    field_values: dict,
+    output_path: str,
+    api_key: str,
+) -> str:
+    """
+    Fill a PDF form and save the result to disk.
+
+    Args:
+        pdf_path:     Absolute path to the source (blank) PDF form.
+        field_values: Dict mapping field names to string values.
+                      Example: {"f1_01[0]": "John", "f1_02[0]": "Doe"}
+        output_path:  Absolute path where the filled PDF will be saved.
+        api_key:      Your FormFill API key (get one at formfill.plenitudo.ai).
+
+    Returns a JSON object with success status and output path.
+    This call counts as ONE fill against your monthly quota.
+    """
+    ok, err = validate_and_charge(api_key)
+    if not ok:
+        return _auth_error(err)
+
+    if not _PYPDF_OK:
+        return _auth_error("pypdf library not available on this server.")
+
+    src, err = _resolve(pdf_path)
+    if err:
+        logger.warning("fill_form source error: %s", err)
+        return json.dumps({"error": err, "ok": False})
+
+    try:
+        dst = Path(output_path).expanduser().resolve()
+        dst.parent.mkdir(parents=True, exist_ok=True)
+    except Exception as exc:
+        return json.dumps({"error": f"Invalid output path: {exc}", "ok": False})
+
+    try:
+        reader = PdfReader(str(src))
+        available_fields = _get_reader_fields(reader)
+
+        # Validate requested field names
+        valid_values, invalid_names = _validate_fields(field_values, available_fields)
+
+        if invalid_names:
+            logger.warning(
+                "fill_form: %d unknown field(s) for %s: %s",
+                len(invalid_names),
+                src.name,
+                invalid_names,
+            )
+
+        writer = PdfWriter()
+        writer.append(reader)
+
+        # Apply fields across all pages
+        for page in writer.pages:
+            writer.update_page_form_field_values(page, field_values)
+
+        with open(str(dst), "wb") as fh:
+            writer.write(fh)
+
+        result = {
+            "ok": True,
+            "output_path": str(dst),
+            "fields_filled": len(valid_values),
+            "pages": len(reader.pages),
+            "message": f"Filled PDF saved to {dst}",
+        }
+        if invalid_names:
+            result["warnings"] = {
+                "unknown_fields": invalid_names,
+                "valid_fields": list(available_fields.keys()),
+            }
+
+        logger.info(
+            "fill_form: %s → %s (%d fields, %d pages)",
+            src.name,
+            dst.name,
+            len(valid_values),
+            len(reader.pages),
+        )
+        return json.dumps(result, indent=2)
+
+    except Exception as exc:
+        logger.exception("fill_form failed for %s", pdf_path)
+        return json.dumps({"error": str(exc), "ok": False})
+
+
+# ---------------------------------------------------------------------------
+# Tool 3 — fill_form_multipage
+# ---------------------------------------------------------------------------
+
+@mcp.tool()
+def fill_form_multipage(
+    pdf_path: str,
+    field_values: dict,
+    output_path: str,
+    api_key: str,
+) -> str:
+    """
+    Fill a multi-page PDF form and save the result to disk.
+
+    Identical to fill_form but explicitly iterates page-by-page, which is
+    more reliable for forms where field names repeat across pages or where
+    page-level annotations are used.
+
+    Args:
+        pdf_path:     Absolute path to the source (blank) PDF form.
+        field_values: Dict mapping field names to string values.
+        output_path:  Absolute path where the filled PDF will be saved.
+        api_key:      Your FormFill API key (get one at formfill.plenitudo.ai).
+
+    Returns a JSON object with success status, output path, and per-page info.
+    This call counts as ONE fill against your monthly quota.
+    """
+    ok, err = validate_and_charge(api_key)
+    if not ok:
+        return _auth_error(err)
+
+    if not _PYPDF_OK:
+        return _auth_error("pypdf library not available on this server.")
+
+    src, err = _resolve(pdf_path)
+    if err:
+        logger.warning("fill_form_multipage source error: %s", err)
+        return json.dumps({"error": err, "ok": False})
+
+    try:
+        dst = Path(output_path).expanduser().resolve()
+        dst.parent.mkdir(parents=True, exist_ok=True)
+    except Exception as exc:
+        return json.dumps({"error": f"Invalid output path: {exc}", "ok": False})
+
+    try:
+        reader = PdfReader(str(src))
+        available_fields = _get_reader_fields(reader)
+
+        valid_values, invalid_names = _validate_fields(field_values, available_fields)
+
+        writer = PdfWriter()
+        writer.append(reader)
+
+        pages_updated = []
+        for i, page in enumerate(writer.pages):
+            writer.update_page_form_field_values(page, field_values)
+            pages_updated.append(i + 1)
+
+        with open(str(dst), "wb") as fh:
+            writer.write(fh)
+
+        result = {
+            "ok": True,
+            "output_path": str(dst),
+            "fields_filled": len(valid_values),
+            "total_pages": len(reader.pages),
+            "pages_updated": pages_updated,
+            "message": f"Multi-page filled PDF saved to {dst}",
+        }
+        if invalid_names:
+            result["warnings"] = {
+                "unknown_fields": invalid_names,
+                "valid_fields": list(available_fields.keys()),
+            }
+
+        logger.info(
+            "fill_form_multipage: %s → %s (%d fields, %d pages)",
+            src.name,
+            dst.name,
+            len(valid_values),
+            len(reader.pages),
+        )
+        return json.dumps(result, indent=2)
+
+    except Exception as exc:
+        logger.exception("fill_form_multipage failed for %s", pdf_path)
+        return json.dumps({"error": str(exc), "ok": False})
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+
+if __name__ == "__main__":
+    logger.info("FormFill MCP server starting up (streamable-http on :8000)")
+    mcp.run(transport="streamable-http")

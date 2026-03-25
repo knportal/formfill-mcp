@@ -1,0 +1,16 @@
+# FormFill MCP — Python dependencies
+# Install with: pip install -r requirements.txt
+
+# MCP server framework
+mcp>=1.0.0
+
+# PDF reading and writing
+pypdf>=4.0.0
+
+# Stripe webhook handler (stripe_webhook.py)
+flask>=3.0.0
+stripe>=8.0.0
+
+# Stripe signature verification needs this at runtime
+# (already a transitive dep of stripe, listed explicitly for clarity)
+requests>=2.31.0
