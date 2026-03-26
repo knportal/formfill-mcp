@@ -55,7 +55,12 @@ except ImportError:  # pragma: no cover
 # ---------------------------------------------------------------------------
 # MCP server
 # ---------------------------------------------------------------------------
-mcp = FastMCP("FormFill", host="0.0.0.0", port=8000)
+mcp = FastMCP(
+    "FormFill",
+    instructions="Fill any interactive PDF form from your AI agent — tax forms, HR paperwork, legal documents — in a single tool call.",
+    host="0.0.0.0",
+    port=8000,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -108,16 +113,7 @@ def list_form_fields(
     pdf_path: Annotated[str, Field(description="Absolute path to the PDF file on disk.")],
     api_key: Annotated[str, Field(description="Your FormFill API key (get one at formfill.plenitudo.ai).")],
 ) -> str:
-    """
-    List all fillable fields in a PDF form.
-
-    Args:
-        pdf_path: Absolute path to the PDF file on disk.
-        api_key:  Your FormFill API key (get one at formfill.plenitudo.ai).
-
-    Returns a JSON object with field names, types, and current values.
-    This call does NOT count against your monthly fill quota.
-    """
+    """Inspect a PDF and return every fillable field name, type, and current value. Use this before fill_form to discover available fields."""
     # Auth — listing fields is free, but we still require a valid key
     ok, err = validate_and_charge.__wrapped__(api_key) if hasattr(validate_and_charge, "__wrapped__") else _validate_key_only(api_key)
     if not ok:
@@ -223,19 +219,7 @@ def fill_form(
     output_path: Annotated[str, Field(description="Absolute path where the filled PDF will be saved.")],
     api_key: Annotated[str, Field(description="Your FormFill API key (get one at formfill.plenitudo.ai).")],
 ) -> str:
-    """
-    Fill a PDF form and save the result to disk.
-
-    Args:
-        pdf_path:     Absolute path to the source (blank) PDF form.
-        field_values: Dict mapping field names to string values.
-                      Example: {"f1_01[0]": "John", "f1_02[0]": "Doe"}
-        output_path:  Absolute path where the filled PDF will be saved.
-        api_key:      Your FormFill API key (get one at formfill.plenitudo.ai).
-
-    Returns a JSON object with success status and output path.
-    This call counts as ONE fill against your monthly quota.
-    """
+    """Fill a PDF form with the given field values and save the result to disk. One fill counts against your monthly quota."""
     ok, err = validate_and_charge(api_key)
     if not ok:
         return _auth_error(err)
@@ -317,22 +301,7 @@ def fill_form_multipage(
     output_path: Annotated[str, Field(description="Absolute path where the filled PDF will be saved.")],
     api_key: Annotated[str, Field(description="Your FormFill API key (get one at formfill.plenitudo.ai).")],
 ) -> str:
-    """
-    Fill a multi-page PDF form and save the result to disk.
-
-    Identical to fill_form but explicitly iterates page-by-page, which is
-    more reliable for forms where field names repeat across pages or where
-    page-level annotations are used.
-
-    Args:
-        pdf_path:     Absolute path to the source (blank) PDF form.
-        field_values: Dict mapping field names to string values.
-        output_path:  Absolute path where the filled PDF will be saved.
-        api_key:      Your FormFill API key (get one at formfill.plenitudo.ai).
-
-    Returns a JSON object with success status, output path, and per-page info.
-    This call counts as ONE fill against your monthly quota.
-    """
+    """Fill a multi-page PDF form, iterating page-by-page for reliability. Identical to fill_form but optimized for large or complex documents. One fill counts against your monthly quota."""
     ok, err = validate_and_charge(api_key)
     if not ok:
         return _auth_error(err)
