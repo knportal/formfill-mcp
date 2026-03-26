@@ -13,6 +13,9 @@ import logging
 import os
 import sys
 from pathlib import Path
+from typing import Annotated
+
+from pydantic import Field
 
 from mcp.server.fastmcp import FastMCP
 
@@ -101,7 +104,10 @@ def _validate_fields(
 # ---------------------------------------------------------------------------
 
 @mcp.tool()
-def list_form_fields(pdf_path: str, api_key: str) -> str:
+def list_form_fields(
+    pdf_path: Annotated[str, Field(description="Absolute path to the PDF file on disk.")],
+    api_key: Annotated[str, Field(description="Your FormFill API key (get one at formfill.plenitudo.ai).")],
+) -> str:
     """
     List all fillable fields in a PDF form.
 
@@ -212,10 +218,10 @@ def _validate_key_only(api_key: str) -> tuple[bool, str | None]:
 
 @mcp.tool()
 def fill_form(
-    pdf_path: str,
-    field_values: dict,
-    output_path: str,
-    api_key: str,
+    pdf_path: Annotated[str, Field(description="Absolute path to the source PDF file.")],
+    field_values: Annotated[dict[str, str], Field(description="Map of field names to values. Use list_form_fields to discover field names.")],
+    output_path: Annotated[str, Field(description="Absolute path where the filled PDF will be saved.")],
+    api_key: Annotated[str, Field(description="Your FormFill API key (get one at formfill.plenitudo.ai).")],
 ) -> str:
     """
     Fill a PDF form and save the result to disk.
@@ -306,10 +312,10 @@ def fill_form(
 
 @mcp.tool()
 def fill_form_multipage(
-    pdf_path: str,
-    field_values: dict,
-    output_path: str,
-    api_key: str,
+    pdf_path: Annotated[str, Field(description="Absolute path to the source PDF file.")],
+    field_values: Annotated[dict[str, str], Field(description="Map of field names to values. Use list_form_fields to discover field names.")],
+    output_path: Annotated[str, Field(description="Absolute path where the filled PDF will be saved.")],
+    api_key: Annotated[str, Field(description="Your FormFill API key (get one at formfill.plenitudo.ai).")],
 ) -> str:
     """
     Fill a multi-page PDF form and save the result to disk.
