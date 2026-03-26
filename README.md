@@ -1,21 +1,54 @@
 # FormFill MCP
 
-Fill PDF forms from any AI agent that supports the Model Context Protocol.
-Built for [Plenitudo.ai](https://plenitudo.ai).
+[![smithery badge](https://smithery.ai/badge/formfill-mcp)](https://smithery.ai/server/formfill-mcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](smithery.yaml)
+
+Fill any interactive PDF form from your AI agent — in a single tool call.
+Tax forms, HR paperwork, legal documents, lease agreements — if it has fillable fields, FormFill can fill it.
+
+Built by [Plenitudo AI](https://plenitudo.ai).
 
 ---
 
-## What it is
+## Why FormFill?
 
-FormFill MCP exposes three tools that let Claude (and other MCP-compatible agents) fill interactive PDF forms programmatically:
+Most AI workflows that touch PDFs fall apart at the last mile: the agent understands the form but can't actually write to it. FormFill closes that gap.
+
+- **One tool call** — inspect and fill any PDF form without writing a single line of code
+- **No base64 nightmares** — tools use file paths, so large PDFs work cleanly
+- **Any agent, any platform** — works with Claude Desktop, Cursor, Cline, Continue, and any MCP-compatible host
+- **Free tier included** — 50 fills/month at no cost
+
+---
+
+## Tools
 
 | Tool | What it does |
 |---|---|
-| `list_form_fields` | Inspect a PDF and return every fillable field name and type |
-| `fill_form` | Fill a PDF form and save the result |
-| `fill_form_multipage` | Same as `fill_form`, optimised for multi-page forms |
+| `list_form_fields` | Inspect a PDF and return every fillable field name, type, and current value |
+| `fill_form` | Fill a PDF form with provided field values and save the result |
+| `fill_form_multipage` | Same as `fill_form`, optimised for large multi-page documents |
 
-All tools use **file paths** rather than base64 encoding, so even large PDFs are handled cleanly.
+### Typical workflow
+
+```
+1. list_form_fields  →  discover field names in the PDF
+2. fill_form         →  write values, save filled copy
+```
+
+---
+
+## Supported Form Types
+
+FormFill works with any interactive (AcroForm) PDF. Common use cases:
+
+- **Tax:** W-9, W-4, 1040, Schedule C, state tax forms
+- **HR:** I-9, onboarding packets, benefits enrollment, PTO requests
+- **Legal:** NDAs, lease agreements, contracts with signature fields
+- **Insurance:** claims forms, enrollment applications
+- **Real estate:** purchase agreements, disclosure forms, rental applications
+- **Education:** admissions forms, transcripts, financial aid paperwork
 
 ---
 
@@ -30,32 +63,13 @@ Get an API key at **[formfill.plenitudo.ai](https://formfill.plenitudo.ai)**.
 
 ---
 
-## Setup
+## Quick Start
 
-### 1. Install dependencies
+### Step 1 — Get an API key
 
-```bash
-cd ~/Projects/formfill-mcp
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
+Visit [formfill.plenitudo.ai](https://formfill.plenitudo.ai) and sign up for a free key.
 
-### 2. Configure environment
-
-```bash
-cp .env.example .env
-# Edit .env — at minimum set STRIPE_WEBHOOK_SECRET if running the webhook handler
-```
-
-### 3. Create an API key (self-hosted / dev)
-
-```bash
-python manage_keys.py create --tier free
-# → ff_free_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-```
-
-### 4. Add to Claude Desktop
+### Step 2 — Add to Claude Desktop
 
 Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
@@ -72,9 +86,57 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 Restart Claude Desktop.
 
+### Step 3 — Fill a form
+
+```
+List the fillable fields in /Users/me/forms/w9.pdf using API key ff_free_abc123
+```
+
+```
+Fill the form at /Users/me/forms/w9.pdf with name "Jane Smith", TIN "12-3456789",
+address "123 Main St, Austin TX 78701". Save to /Users/me/forms/w9_filled.pdf.
+API key: ff_free_abc123
+```
+
 ---
 
-## Example prompts for Claude Desktop
+## Self-Hosting Setup
+
+### 1. Install dependencies
+
+```bash
+git clone https://github.com/knportal/formfill-mcp.git
+cd formfill-mcp
+
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 2. Configure environment
+
+```bash
+cp .env.example .env
+# Edit .env — at minimum set STRIPE_WEBHOOK_SECRET if running the webhook handler
+```
+
+### 3. Create an API key (dev/self-hosted)
+
+```bash
+python manage_keys.py create --tier free
+# → ff_free_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+### 4. Run the server
+
+```bash
+python server.py
+# MCP server starts on http://localhost:8000
+```
+
+---
+
+## Example Prompts
 
 **List fields in a form:**
 ```
@@ -88,7 +150,7 @@ and address "123 Main St, Austin TX 78701". Save to /Users/me/forms/w9_filled.pd
 Use API key ff_free_abc123.
 ```
 
-**Fill a multi-page application:**
+**Fill a multi-page rental application:**
 ```
 Fill the 3-page rental application at /Users/me/forms/rental_app.pdf
 with these values: [paste field values]. Save to /Users/me/Desktop/rental_filled.pdf.
@@ -97,9 +159,33 @@ api_key: ff_free_abc123
 
 ---
 
-## Running the Stripe webhook handler
+## Error Handling
 
-Required only if you're processing Pro subscriptions:
+All tools return JSON. On error, the response includes `"ok": false` and an `"error"` field:
+
+```json
+{"ok": false, "error": "Invalid API key"}
+{"ok": false, "error": "Usage limit reached. Upgrade at https://formfill.plenitudo.ai"}
+{"ok": false, "error": "File not found: /Users/me/missing.pdf"}
+{"ok": false, "error": "Field 'unknown_field' not found in form"}
+```
+
+On success, `fill_form` returns:
+
+```json
+{
+  "ok": true,
+  "output_path": "/Users/me/forms/w9_filled.pdf",
+  "fields_filled": 12,
+  "invalid_fields": []
+}
+```
+
+---
+
+## Stripe Webhook Handler
+
+Required only if processing Pro subscriptions:
 
 ```bash
 source venv/bin/activate
@@ -116,11 +202,9 @@ Events handled:
 - `customer.subscription.created` → upgrades key to Pro
 - `customer.subscription.deleted` → downgrades key to Free
 
-The Stripe customer must have `formfill_api_key` in their metadata.
-
 ---
 
-## Cloudflare Worker (remote access)
+## Cloudflare Worker (Remote Access)
 
 For remote agents that can't reach your local machine, deploy the included Cloudflare Worker:
 
@@ -135,7 +219,7 @@ See `worker.js` for full instructions.
 
 ---
 
-## Key management CLI
+## Key Management CLI
 
 ```bash
 # Create a free key
@@ -173,6 +257,18 @@ logs/server.log    — Structured log file
 
 ---
 
-## Support
+## Contributing
 
-[formfill.plenitudo.ai](https://formfill.plenitudo.ai)
+See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup and PR guidelines.
+
+## Security
+
+Found a vulnerability? See [SECURITY.md](SECURITY.md) for our responsible disclosure policy.
+
+## License
+
+[MIT](LICENSE) — Copyright © 2024 Plenitudo AI
+
+---
+
+**[formfill.plenitudo.ai](https://formfill.plenitudo.ai)** · [Issues](https://github.com/knportal/formfill-mcp/issues) · [Plenitudo.ai](https://plenitudo.ai)
