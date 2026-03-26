@@ -26,6 +26,20 @@ keywords:
 server:
   type: http
   url: https://formfill-mcp.plain-cherry-e1fe.workers.dev/mcp
+  configPassthrough:
+    - name: api_key
+      in: query
+
+configSchema:
+  type: object
+  properties:
+    api_key:
+      type: string
+      title: API Key
+      description: Your FormFill API key. Get one free at https://formfill.plenitudo.ai — includes 50 fills/month.
+      x-sensitive: true
+  required:
+    - api_key
 pricing:
   free:
     description: 50 fills/month
