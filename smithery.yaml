@@ -1,15 +1,28 @@
 name: formfill-mcp
 displayName: FormFill MCP
-description: Fill any interactive PDF form from your AI agent — tax forms, HR paperwork, legal documents — in a single tool call.
+description: Fill any interactive PDF form from your AI agent — tax forms, HR paperwork, legal documents — in a single tool call. Supports W-9, W-4, I-9, lease agreements, insurance forms, and more.
 version: "1.0.0"
 license: MIT
+author: Plenitudo AI
 homepage: https://formfill.plenitudo.ai
 repository: https://github.com/knportal/formfill-mcp
+support: https://github.com/knportal/formfill-mcp/issues
 tags:
   - pdf
   - forms
   - document
   - productivity
+keywords:
+  - pdf
+  - forms
+  - document-automation
+  - pdf-fill
+  - tax-forms
+  - hr-documents
+  - legal-documents
+  - form-filling
+  - productivity
+  - automation
 server:
   type: http
   url: https://formfill-mcp.plain-cherry-e1fe.workers.dev/mcp
@@ -22,8 +35,66 @@ pricing:
     price: $9.99/month
 tools:
   - name: list_form_fields
-    description: List all fillable fields in a PDF form
+    description: Inspect a PDF and return every fillable field name, type, and current value. Use this first to discover which fields exist before calling fill_form.
+    inputSchema:
+      type: object
+      properties:
+        api_key:
+          type: string
+          description: Your FormFill API key. Get one at https://formfill.plenitudo.ai (free tier available).
+        pdf_path:
+          type: string
+          description: Absolute path to the PDF file on the local filesystem (e.g. /Users/me/forms/w9.pdf).
+      required:
+        - api_key
+        - pdf_path
+
   - name: fill_form
-    description: Fill a single-page PDF form with provided field values
+    description: Fill a PDF form with provided field values and save the filled result to disk. Works for single-page and multi-page PDFs. Use list_form_fields first to discover available field names.
+    inputSchema:
+      type: object
+      properties:
+        api_key:
+          type: string
+          description: Your FormFill API key.
+        pdf_path:
+          type: string
+          description: Absolute path to the source (unfilled) PDF file.
+        output_path:
+          type: string
+          description: Absolute path where the filled PDF will be saved (e.g. /Users/me/forms/w9_filled.pdf).
+        field_values:
+          type: object
+          description: Map of field names to their values. Keys must match the field names returned by list_form_fields.
+          additionalProperties:
+            type: string
+      required:
+        - api_key
+        - pdf_path
+        - output_path
+        - field_values
+
   - name: fill_form_multipage
-    description: Fill a multi-page PDF form with provided field values
+    description: Fill a multi-page PDF form with provided field values. Functionally identical to fill_form but optimised for large documents with many pages or complex field structures.
+    inputSchema:
+      type: object
+      properties:
+        api_key:
+          type: string
+          description: Your FormFill API key.
+        pdf_path:
+          type: string
+          description: Absolute path to the source (unfilled) PDF file.
+        output_path:
+          type: string
+          description: Absolute path where the filled PDF will be saved.
+        field_values:
+          type: object
+          description: Map of field names to their values. Keys must match the field names returned by list_form_fields.
+          additionalProperties:
+            type: string
+      required:
+        - api_key
+        - pdf_path
+        - output_path
+        - field_values
