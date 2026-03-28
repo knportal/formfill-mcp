@@ -370,5 +370,9 @@ def fill_form_multipage(
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    logger.info("FormFill MCP server starting up (streamable-http on :8000)")
-    mcp.run(transport="streamable-http")
+    if "--stdio" in sys.argv:
+        logger.info("FormFill MCP server starting up (stdio)")
+        mcp.run(transport="stdio")
+    else:
+        logger.info("FormFill MCP server starting up (streamable-http on :8000)")
+        mcp.run(transport="streamable-http")
