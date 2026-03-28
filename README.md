@@ -1,74 +1,95 @@
-# FormFill MCP
+<div align="center">
+  <img src="assets/logo.png" alt="FormFill MCP" width="120" />
+  <h1>FormFill MCP</h1>
+  <p><strong>Fill any PDF form from your AI agent — in a single tool call.</strong></p>
 
-**An MCP server for Claude, Cursor, and any AI agent — fill any PDF form in one tool call.**
-Tax forms, HR paperwork, legal documents, lease agreements — if it has fillable fields, FormFill can fill it.
+  [![smithery badge](https://smithery.ai/badge/@knportal/formfill-mcp)](https://smithery.ai/server/@knportal/formfill-mcp)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+  [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](smithery.yaml)
+  [![MCP](https://img.shields.io/badge/MCP-compatible-brightgreen.svg)](https://modelcontextprotocol.io)
 
-[![smithery badge](https://smithery.ai/badge/formfill-mcp)](https://smithery.ai/server/formfill-mcp)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](smithery.yaml)
+  <p>Tax forms · HR paperwork · Legal documents · Lease agreements · Insurance claims</p>
+  <p>If it has fillable fields, FormFill can fill it.</p>
 
-Built by [Plenitudo AI](https://plenitudo.ai).
+  **[Get API Key](https://formfill.plenitudo.ai)** · **[View on Smithery](https://smithery.ai/server/@knportal/formfill-mcp)** · Built by [Plenitudo AI](https://plenitudo.ai)
+</div>
 
 ---
 
-## Why FormFill?
+<!-- Add demo GIF here once recorded: replace the comment with: ![FormFill Demo](assets/demo.gif) -->
 
-Most AI workflows that touch PDFs fall apart at the last mile: the agent understands the form but can't actually write to it. FormFill closes that gap.
+## How It Works
 
-- **One tool call** — inspect and fill any PDF form without writing a single line of code
-- **No base64 nightmares** — tools use file paths, so large PDFs work cleanly
-- **Any agent, any platform** — works with Claude Desktop, Cursor, Cline, Continue, and any MCP-compatible host
+```
+ ┌─────────────────┐        ┌─────────────────┐        ┌─────────────────┐
+ │  1. Inspect     │        │  2. Fill         │        │  3. Done        │
+ │                 │   →    │                 │   →    │                 │
+ │  list_form_     │        │  fill_form       │        │  Filled PDF     │
+ │  fields         │        │                 │        │  saved to disk  │
+ │                 │        │                 │        │                 │
+ │  Returns every  │        │  Writes values, │        │  Open in        │
+ │  field name,    │        │  saves output   │        │  Preview or     │
+ │  type & value   │        │  file           │        │  send anywhere  │
+ └─────────────────┘        └─────────────────┘        └─────────────────┘
+```
+
+Most AI workflows collapse at the last mile: the agent *understands* the form but can't *write to it*. FormFill closes that gap with three focused tools.
 
 ---
 
 ## Tools
 
-| Tool | What it does |
-|---|---|
-| `list_form_fields` | Inspect a PDF and return every fillable field name, type, and current value |
-| `fill_form` | Fill a PDF form with provided field values and save the result |
-| `fill_form_multipage` | Optimised for PDFs with more than 5 pages or fields spanning multiple pages |
+| Tool | Description | When to use |
+|---|---|---|
+| `list_form_fields` | Returns every fillable field — name, type, and current value | First step: discover what's in the form |
+| `fill_form` | Fill a PDF with provided field values and save the result | Standard forms (1–5 pages) |
+| `fill_form_multipage` | Same as `fill_form`, page-by-page for large documents | Complex multi-page forms (6+ pages) |
 
-### Typical workflow
+---
 
-```
-1. list_form_fields  →  discover field names in the PDF
-2. fill_form         →  write values, save filled copy
-```
+## Works With
+
+Any MCP-compatible host:
+
+- **Claude Desktop** — add to `claude_desktop_config.json`
+- **Cursor** — MCP server config
+- **Cline** — same config pattern
+- **Continue** — same config pattern
+- Any agent that supports the Model Context Protocol
 
 ---
 
 ## Supported Form Types
 
-FormFill works with any interactive (AcroForm) PDF. Common use cases:
-
-- **Tax:** W-9, W-4, 1040, Schedule C, state tax forms
-- **HR:** I-9, onboarding packets, benefits enrollment, PTO requests
-- **Legal:** NDAs, lease agreements, contracts with signature fields
-- **Insurance:** claims forms, enrollment applications
-- **Real estate:** purchase agreements, disclosure forms, rental applications
-- **Education:** admissions forms, transcripts, financial aid paperwork
+| Category | Examples |
+|---|---|
+| Tax | W-9, W-4, 1040, Schedule C, state forms |
+| HR | I-9, onboarding packets, benefits enrollment, PTO |
+| Legal | NDAs, lease agreements, contracts, disclosures |
+| Insurance | Claims forms, enrollment applications |
+| Real Estate | Purchase agreements, rental applications, disclosures |
+| Education | Admissions, financial aid, transcripts |
 
 ---
 
 ## Pricing
 
-| Tier | Price | Fills |
+| Tier | Price | Monthly Fills |
 |---|---|---|
-| Free | $0 | 50 fills / month |
-| Pro | $9.99 / month | Unlimited |
+| **Free** | $0 | 50 fills |
+| **Pro** | $9.99 / month | Unlimited |
 
-Get an API key at **[formfill.plenitudo.ai](https://formfill.plenitudo.ai)**.
+Get your API key at **[formfill.plenitudo.ai](https://formfill.plenitudo.ai)**
 
 ---
 
 ## Quick Start
 
-### Step 1 — Get an API key
+### 1. Get an API key
 
-Visit [formfill.plenitudo.ai](https://formfill.plenitudo.ai) and sign up for a free key.
+Sign up at [formfill.plenitudo.ai](https://formfill.plenitudo.ai) — free tier available immediately.
 
-### Step 2 — Add to Claude Desktop
+### 2. Connect to Claude Desktop
 
 Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
@@ -83,94 +104,51 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
-Restart Claude Desktop.
+Restart Claude Desktop. You'll see the 🔨 tools icon — FormFill is connected.
 
-### Step 3 — Fill a form
-
-```
-List the fillable fields in /Users/me/forms/w9.pdf using API key ff_free_abc123
-```
+### 3. Fill your first form
 
 ```
-Fill the form at /Users/me/forms/w9.pdf with name "Jane Smith", TIN "12-3456789",
-address "123 Main St, Austin TX 78701". Save to /Users/me/forms/w9_filled.pdf.
+List the fillable fields in /Users/me/Desktop/w9.pdf using API key ff_free_abc123
+```
+
+```
+Fill the form at /Users/me/Desktop/w9.pdf with:
+  name: Jane Smith
+  TIN: 12-3456789
+  address: 123 Main St, Austin TX 78701
+Save to /Users/me/Desktop/w9_filled.pdf
 API key: ff_free_abc123
-```
-
----
-
-## Self-Hosting Setup
-
-### 1. Install dependencies
-
-```bash
-git clone https://github.com/knportal/formfill-mcp.git
-cd formfill-mcp
-
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-### 2. Configure environment
-
-```bash
-cp .env.example .env
-# Edit .env — at minimum set STRIPE_WEBHOOK_SECRET if running the webhook handler
-```
-
-### 3. Create an API key (dev/self-hosted)
-
-```bash
-python manage_keys.py create --tier free
-# → ff_free_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-```
-
-### 4. Run the server
-
-```bash
-python server.py
-# MCP server starts on http://localhost:8000
 ```
 
 ---
 
 ## Example Prompts
 
-**List fields in a form:**
+**W-9 (tax):**
 ```
-List the fillable fields in /Users/me/forms/w9.pdf using API key ff_free_abc123
-```
-
-**Fill a W-9:**
-```
-Fill the form at /Users/me/forms/w9.pdf with my name "Jane Smith", TIN "12-3456789",
-and address "123 Main St, Austin TX 78701". Save to /Users/me/forms/w9_filled.pdf.
-Use API key ff_free_abc123.
+Fill the W-9 at ~/Desktop/fw9.pdf with my name "John Smith", SSN "123-45-6789",
+address "456 Oak Ave, Boston MA 02101". Business type: Individual/sole proprietor.
+Save to ~/Desktop/fw9_filled.pdf. API key: ff_free_abc123
 ```
 
-**Fill a multi-page rental application:**
+**Rental application:**
 ```
-Fill the 3-page rental application at /Users/me/forms/rental_app.pdf
-with these values: [paste field values]. Save to /Users/me/Desktop/rental_filled.pdf.
-api_key: ff_free_abc123
+Fill the rental application at ~/Desktop/rental_app.pdf with these values:
+[paste field values]. Save to ~/Desktop/rental_filled.pdf. API key: ff_free_abc123
+```
+
+**Multi-page contract:**
+```
+Fill the 8-page NDA at ~/Desktop/nda.pdf. My name: Jane Smith, Company: Acme Corp,
+Date: March 28 2026. Use fill_form_multipage. API key: ff_free_abc123
 ```
 
 ---
 
-## Error Handling
+## Response Format
 
-All tools return JSON. On error, the response includes `"ok": false` and an `"error"` field:
-
-```json
-{"ok": false, "error": "Invalid API key"}
-{"ok": false, "error": "Usage limit reached. Upgrade at https://formfill.plenitudo.ai"}
-{"ok": false, "error": "File not found: /Users/me/missing.pdf"}
-{"ok": false, "error": "Field 'unknown_field' not found in form"}
-```
-
-On success, `fill_form` returns:
-
+**Success:**
 ```json
 {
   "ok": true,
@@ -180,94 +158,62 @@ On success, `fill_form` returns:
 }
 ```
 
+**Error:**
+```json
+{"ok": false, "error": "Invalid API key"}
+{"ok": false, "error": "Usage limit reached. Upgrade at https://formfill.plenitudo.ai"}
+{"ok": false, "error": "File not found: /Users/me/missing.pdf"}
+```
+
 ---
 
-## Stripe Webhook Handler
-
-Required only if processing Pro subscriptions:
+## Self-Hosting
 
 ```bash
+git clone https://github.com/knportal/formfill-mcp.git
+cd formfill-mcp
+
+python -m venv venv
 source venv/bin/activate
-python stripe_webhook.py
-# Listens on port 8090 by default
-```
+pip install -r requirements.txt
 
-Point your Stripe webhook to:
-```
-https://your-domain.com/webhook/stripe
-```
-
-Events handled:
-- `customer.subscription.created` → upgrades key to Pro
-- `customer.subscription.deleted` → downgrades key to Free
-
----
-
-## Cloudflare Worker (Remote Access)
-
-For remote agents that can't reach your local machine, deploy the included Cloudflare Worker:
-
-```bash
-npm install -g wrangler
-wrangler login
-wrangler secret put FORMFILL_ORIGIN_URL   # your server's public URL
-wrangler deploy
-```
-
-See `worker.js` for full instructions.
-
----
-
-## Key Management CLI
-
-```bash
-# Create a free key
+cp .env.example .env
 python manage_keys.py create --tier free
-
-# Create a pro key (after Stripe payment)
-python manage_keys.py create --tier pro --customer cus_abc123
-
-# List all keys
-python manage_keys.py list
-
-# Check usage for a key
-python manage_keys.py usage ff_free_abc123
-
-# Deactivate a key
-python manage_keys.py deactivate ff_free_abc123
+python server.py
+# → MCP server running on http://localhost:8000
 ```
+
+For remote agent access, deploy the included Cloudflare Worker (`worker.js`).
 
 ---
 
 ## Architecture
 
 ```
-server.py          — MCP server (the three tools)
+server.py          — MCP server (3 tools)
 auth.py            — API key validation + usage tracking (SQLite)
-usage.py           — Usage helpers
-config.py          — Environment variable configuration
-stripe_webhook.py  — Flask webhook handler for Stripe events
+stripe_webhook.py  — Stripe subscription webhook handler
 worker.js          — Cloudflare Worker (remote proxy)
-manage_keys.py     — CLI for key management
+manage_keys.py     — Key management CLI
 data/keys.db       — API key store
 data/usage.db      — Monthly usage counters
-logs/server.log    — Structured log file
 ```
 
 ---
 
-## Contributing
+## Contributing & Security
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup and PR guidelines.
-
-## Security
-
-Found a vulnerability? See [SECURITY.md](SECURITY.md) for our responsible disclosure policy.
+- [CONTRIBUTING.md](CONTRIBUTING.md) — dev setup and PR guidelines
+- [SECURITY.md](SECURITY.md) — responsible disclosure policy
 
 ## License
 
-[MIT](LICENSE) — Copyright © 2024 Plenitudo AI
+[MIT](LICENSE) — Copyright © 2025 Plenitudo AI
 
 ---
 
-**[formfill.plenitudo.ai](https://formfill.plenitudo.ai)** · [Issues](https://github.com/knportal/formfill-mcp/issues) · [Plenitudo.ai](https://plenitudo.ai)
+<div align="center">
+  <strong><a href="https://formfill.plenitudo.ai">formfill.plenitudo.ai</a></strong> ·
+  <a href="https://github.com/knportal/formfill-mcp/issues">Issues</a> ·
+  <a href="https://plenitudo.ai">Plenitudo.ai</a>
+</div>
