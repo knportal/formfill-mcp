@@ -3,7 +3,7 @@ FormFill MCP Server — Production
 Fills PDF forms from structured field data.
 
 Every tool requires an `api_key` parameter. Keys are issued at
-https://formfill.plenitudo.ai. Free tier: 50 fills/month. Pro: unlimited.
+https://formfill.plenitudo.ai.
 
 Uses file paths (not base64) to handle large PDFs without message-size issues.
 """
@@ -219,7 +219,7 @@ def fill_form(
     output_path: Annotated[str, Field(description="Absolute path where the filled PDF will be saved.")],
     api_key: Annotated[str, Field(description="Your FormFill API key (get one at formfill.plenitudo.ai).")],
 ) -> str:
-    """Fill a PDF form with the given field values and save the result to disk. One fill counts against your monthly quota."""
+    """Fill a PDF form with the given field values and save the result to disk. Use for standard single-page or short forms (under 5 pages)."""
     ok, err = validate_and_charge(api_key)
     if not ok:
         return _auth_error(err)
@@ -301,7 +301,7 @@ def fill_form_multipage(
     output_path: Annotated[str, Field(description="Absolute path where the filled PDF will be saved.")],
     api_key: Annotated[str, Field(description="Your FormFill API key (get one at formfill.plenitudo.ai).")],
 ) -> str:
-    """Fill a multi-page PDF form, iterating page-by-page for reliability. Identical to fill_form but optimized for large or complex documents. One fill counts against your monthly quota."""
+    """Fill a multi-page PDF form, iterating page-by-page for reliability. Use when the PDF has more than 5 pages or fields spanning multiple pages (e.g. rental applications, tax packets, multi-section HR forms). Prefer this tool over fill_form for any complex or long document."""
     ok, err = validate_and_charge(api_key)
     if not ok:
         return _auth_error(err)
