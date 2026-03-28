@@ -1,11 +1,11 @@
 # FormFill MCP
 
+**An MCP server for Claude, Cursor, and any AI agent — fill any PDF form in one tool call.**
+Tax forms, HR paperwork, legal documents, lease agreements — if it has fillable fields, FormFill can fill it.
+
 [![smithery badge](https://smithery.ai/badge/formfill-mcp)](https://smithery.ai/server/formfill-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](smithery.yaml)
-
-Fill any interactive PDF form from your AI agent — in a single tool call.
-Tax forms, HR paperwork, legal documents, lease agreements — if it has fillable fields, FormFill can fill it.
 
 Built by [Plenitudo AI](https://plenitudo.ai).
 
@@ -18,7 +18,6 @@ Most AI workflows that touch PDFs fall apart at the last mile: the agent underst
 - **One tool call** — inspect and fill any PDF form without writing a single line of code
 - **No base64 nightmares** — tools use file paths, so large PDFs work cleanly
 - **Any agent, any platform** — works with Claude Desktop, Cursor, Cline, Continue, and any MCP-compatible host
-- **Free tier included** — 50 fills/month at no cost
 
 ---
 
@@ -28,7 +27,7 @@ Most AI workflows that touch PDFs fall apart at the last mile: the agent underst
 |---|---|
 | `list_form_fields` | Inspect a PDF and return every fillable field name, type, and current value |
 | `fill_form` | Fill a PDF form with provided field values and save the result |
-| `fill_form_multipage` | Same as `fill_form`, optimised for large multi-page documents |
+| `fill_form_multipage` | Optimised for PDFs with more than 5 pages or fields spanning multiple pages |
 
 ### Typical workflow
 
