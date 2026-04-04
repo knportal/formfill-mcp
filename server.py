@@ -42,6 +42,18 @@ logger = logging.getLogger(__name__)
 from auth import validate_and_charge  # noqa: E402
 
 # ---------------------------------------------------------------------------
+# x402 micropayments
+# ---------------------------------------------------------------------------
+from x402 import (  # noqa: E402
+    PRICE_USDC,
+    WALLET_ADDRESS,
+    is_proof_used,
+    mark_proof_used,
+    payment_required_response,
+    verify_payment,
+)
+
+# ---------------------------------------------------------------------------
 # PDF libraries — pypdf is authoritative; we fall back gracefully
 # ---------------------------------------------------------------------------
 try:
@@ -111,13 +123,19 @@ def _validate_fields(
 @mcp.tool()
 def list_form_fields(
     pdf_path: Annotated[str, Field(description="Absolute path to the PDF file on disk.")],
-    api_key: Annotated[str, Field(description="Your FormFill API key (get one at formfill.plenitudo.ai).")],
+    api_key: Annotated[str | None, Field(description="Your FormFill API key (get one at formfill.plenitudo.ai).")] = None,
+    payment_proof: Annotated[str | None, Field(description="x402 payment proof (tx hash). Alternative to api_key for pay-per-use.")] = None,
 ) -> str:
     """Inspect a PDF and return every fillable field name, type, and current value. Use this before fill_form to discover available fields."""
-    # Auth — listing fields is free, but we still require a valid key
-    ok, err = validate_and_charge.__wrapped__(api_key) if hasattr(validate_and_charge, "__wrapped__") else _validate_key_only(api_key)
-    if not ok:
-        return _auth_error(err)
+    # Auth — listing fields is free, but we still require a valid key or payment proof
+    if api_key:
+        ok, err = validate_and_charge.__wrapped__(api_key) if hasattr(validate_and_charge, "__wrapped__") else _validate_key_only(api_key)
+        if not ok:
+            return _auth_error(err)
+    elif payment_proof:
+        pass  # listing is free; accept any payment_proof without consuming it
+    else:
+        return _auth_error("Missing api_key or payment_proof parameter.")
 
     if not _PYPDF_OK:
         return _auth_error("pypdf library not available on this server.")
@@ -217,12 +235,24 @@ def fill_form(
     pdf_path: Annotated[str, Field(description="Absolute path to the source PDF file.")],
     field_values: Annotated[dict[str, str], Field(description="Map of field names to values. Use list_form_fields to discover field names.")],
     output_path: Annotated[str, Field(description="Absolute path where the filled PDF will be saved.")],
-    api_key: Annotated[str, Field(description="Your FormFill API key (get one at formfill.plenitudo.ai).")],
+    api_key: Annotated[str | None, Field(description="Your FormFill API key (get one at formfill.plenitudo.ai).")] = None,
+    payment_proof: Annotated[str | None, Field(description="x402 payment proof (tx hash). Alternative to api_key for pay-per-use.")] = None,
 ) -> str:
     """Fill a PDF form with the given field values and save the result to disk. Use for standard single-page or short forms (under 5 pages)."""
-    ok, err = validate_and_charge(api_key)
-    if not ok:
-        return _auth_error(err)
+    # Auth: accept either API key OR x402 payment proof
+    if api_key:
+        ok, err = validate_and_charge(api_key)
+        if not ok:
+            return _auth_error(err)
+    elif payment_proof:
+        if is_proof_used(payment_proof):
+            return json.dumps({"ok": False, "error": "Payment proof already used"})
+        ok, err = verify_payment(payment_proof, PRICE_USDC, WALLET_ADDRESS)
+        if not ok:
+            return json.dumps({"ok": False, "error": f"Payment verification failed: {err}"})
+        mark_proof_used(payment_proof, "fill_form")
+    else:
+        return json.dumps(payment_required_response("fill_form"))
 
     if not _PYPDF_OK:
         return _auth_error("pypdf library not available on this server.")
@@ -299,12 +329,24 @@ def fill_form_multipage(
     pdf_path: Annotated[str, Field(description="Absolute path to the source PDF file.")],
     field_values: Annotated[dict[str, str], Field(description="Map of field names to values. Use list_form_fields to discover field names.")],
     output_path: Annotated[str, Field(description="Absolute path where the filled PDF will be saved.")],
-    api_key: Annotated[str, Field(description="Your FormFill API key (get one at formfill.plenitudo.ai).")],
+    api_key: Annotated[str | None, Field(description="Your FormFill API key (get one at formfill.plenitudo.ai).")] = None,
+    payment_proof: Annotated[str | None, Field(description="x402 payment proof (tx hash). Alternative to api_key for pay-per-use.")] = None,
 ) -> str:
     """Fill a multi-page PDF form, iterating page-by-page for reliability. Use when the PDF has more than 5 pages or fields spanning multiple pages (e.g. rental applications, tax packets, multi-section HR forms). Prefer this tool over fill_form for any complex or long document."""
-    ok, err = validate_and_charge(api_key)
-    if not ok:
-        return _auth_error(err)
+    # Auth: accept either API key OR x402 payment proof
+    if api_key:
+        ok, err = validate_and_charge(api_key)
+        if not ok:
+            return _auth_error(err)
+    elif payment_proof:
+        if is_proof_used(payment_proof):
+            return json.dumps({"ok": False, "error": "Payment proof already used"})
+        ok, err = verify_payment(payment_proof, PRICE_USDC, WALLET_ADDRESS)
+        if not ok:
+            return json.dumps({"ok": False, "error": f"Payment verification failed: {err}"})
+        mark_proof_used(payment_proof, "fill_form_multipage")
+    else:
+        return json.dumps(payment_required_response("fill_form_multipage"))
 
     if not _PYPDF_OK:
         return _auth_error("pypdf library not available on this server.")
