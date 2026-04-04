@@ -1,8 +1,8 @@
 [build]
-builder = "nixpacks"
+builder = "dockerfile"
 
 [deploy]
 startCommand = "python server.py"
-healthcheckPath = "/"
+healthcheckPath = "/mcp"
 healthcheckTimeout = 300
 restartPolicyType = "always"
