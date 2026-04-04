@@ -12,14 +12,13 @@ STRIPE_PRO_PRICE_ID = os.getenv("STRIPE_PRO_PRICE_ID", "")
 # Logging
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
-# Database base directory  (trailing slash is intentional; DB filenames are appended)
-DB_PATH = os.path.expanduser(
-    os.getenv("FORMFILL_DB_PATH", "~/Projects/formfill-mcp/data/")
-)
+# Data directory (configurable for Railway / Docker)
+DATA_DIR = os.getenv("FORMFILL_DATA_DIR", os.path.expanduser("~/Projects/formfill-mcp/data"))
+os.makedirs(DATA_DIR, exist_ok=True)
 
 # Derived DB paths
-KEYS_DB = os.path.join(DB_PATH, "keys.db")
-USAGE_DB = os.path.join(DB_PATH, "usage.db")
+KEYS_DB = os.path.join(DATA_DIR, "keys.db")
+USAGE_DB = os.path.join(DATA_DIR, "usage.db")
 
 # Tier limits
 FREE_MONTHLY_LIMIT = int(os.getenv("FREE_MONTHLY_LIMIT", "50"))

@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 
 import requests
 
-from config import DB_PATH
+from config import DATA_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ USDC_DECIMALS = 6
 # Replay-prevention database
 # ---------------------------------------------------------------------------
 
-_PROOF_DB = os.path.join(DB_PATH, "x402_proofs.db")
+_PROOF_DB = os.path.join(DATA_DIR, "x402_proofs.db")
 
 _PROOF_SCHEMA = """
 CREATE TABLE IF NOT EXISTS used_proofs (

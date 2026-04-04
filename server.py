@@ -412,6 +412,16 @@ def fill_form_multipage(
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
+    # Start Stripe webhook handler in a background thread
+    import threading
+    from stripe_webhook import app as stripe_app
+
+    def run_stripe_webhook():
+        stripe_app.run(host="0.0.0.0", port=8090, debug=False, use_reloader=False)
+
+    webhook_thread = threading.Thread(target=run_stripe_webhook, daemon=True)
+    webhook_thread.start()
+
     if "--stdio" in sys.argv:
         logger.info("FormFill MCP server starting up (stdio)")
         mcp.run(transport="stdio")
