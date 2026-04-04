@@ -67,11 +67,13 @@ except ImportError:  # pragma: no cover
 # ---------------------------------------------------------------------------
 # MCP server
 # ---------------------------------------------------------------------------
+_PORT = int(os.environ.get("PORT", 8000))
+
 mcp = FastMCP(
     "FormFill",
     instructions="Fill any interactive PDF form from your AI agent — tax forms, HR paperwork, legal documents — in a single tool call.",
     host="0.0.0.0",
-    port=8000,
+    port=_PORT,
 )
 
 
@@ -426,5 +428,5 @@ if __name__ == "__main__":
         logger.info("FormFill MCP server starting up (stdio)")
         mcp.run(transport="stdio")
     else:
-        logger.info("FormFill MCP server starting up (streamable-http on :8000)")
+        logger.info(f"FormFill MCP server starting up (streamable-http on :{_PORT})")
         mcp.run(transport="streamable-http")
