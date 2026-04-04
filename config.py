@@ -25,7 +25,7 @@ FREE_MONTHLY_LIMIT = int(os.getenv("FREE_MONTHLY_LIMIT", "50"))
 
 # Log file
 LOG_FILE = os.path.expanduser(
-    os.getenv("FORMFILL_LOG_FILE", "~/Projects/formfill-mcp/logs/server.log")
+    os.getenv("FORMFILL_LOG_FILE", "./logs/server.log")
 )
 
 # Upgrade URL surfaced in error messages
