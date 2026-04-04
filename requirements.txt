@@ -14,3 +14,7 @@ stripe>=8.0.0
 # Stripe signature verification needs this at runtime
 # (already a transitive dep of stripe, listed explicitly for clarity)
 requests>=2.31.0
+
+# HTTP server for Railway deployment (health endpoint + ASGI wrapper)
+uvicorn>=0.29.0
+starlette>=0.36.0

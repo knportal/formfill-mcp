@@ -414,19 +414,25 @@ def fill_form_multipage(
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    # Start Stripe webhook handler in a background thread
-    import threading
-    from stripe_webhook import app as stripe_app
-
-    def run_stripe_webhook():
-        stripe_app.run(host="0.0.0.0", port=8090, debug=False, use_reloader=False)
-
-    webhook_thread = threading.Thread(target=run_stripe_webhook, daemon=True)
-    webhook_thread.start()
-
     if "--stdio" in sys.argv:
         logger.info("FormFill MCP server starting up (stdio)")
         mcp.run(transport="stdio")
     else:
+        import uvicorn
+        from starlette.applications import Starlette
+        from starlette.requests import Request
+        from starlette.responses import JSONResponse
+        from starlette.routing import Mount, Route
+
+        async def health(request: Request):
+            return JSONResponse({"status": "ok", "service": "formfill-mcp"})
+
+        # Wrap FastMCP ASGI app with a /health endpoint Railway can check
+        mcp_asgi = mcp.streamable_http_app()
+        app = Starlette(routes=[
+            Route("/health", health),
+            Mount("/", app=mcp_asgi),
+        ])
+
         logger.info(f"FormFill MCP server starting up (streamable-http on :{_PORT})")
-        mcp.run(transport="streamable-http")
+        uvicorn.run(app, host="0.0.0.0", port=_PORT)

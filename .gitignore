@@ -1,0 +1,30 @@
+# Secrets — never commit these
+.secrets/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Data & logs (runtime state)
+data/*.db
+logs/
+
+# Wrangler cache
+.wrangler/
+
+# Editor & OS
+.DS_Store
+.env
+*.swp
+*.swo
+
+# Temp files
+TOMORROW.md
