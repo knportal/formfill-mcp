@@ -558,10 +558,29 @@ if __name__ == "__main__":
         async def health(request: Request):
             return JSONResponse({"status": "ok", "service": "formfill-mcp"})
 
+        async def payments(request: Request):
+            try:
+                import sqlite3 as _sqlite3
+                from x402 import _PROOF_DB
+                if not os.path.exists(_PROOF_DB):
+                    return JSONResponse({"payments": [], "server": "formfill"})
+                conn = _sqlite3.connect(_PROOF_DB)
+                conn.row_factory = _sqlite3.Row
+                rows = conn.execute(
+                    "SELECT tx_hash, used_at AS timestamp, tool AS tool_name, 0.001 AS amount "
+                    "FROM used_proofs ORDER BY used_at DESC LIMIT 100"
+                ).fetchall()
+                conn.close()
+                result = [dict(row) for row in rows]
+                return JSONResponse({"payments": result, "server": "formfill"})
+            except Exception as exc:
+                return JSONResponse({"payments": [], "server": "formfill", "error": str(exc)})
+
         # Wrap FastMCP ASGI app with a /health endpoint Railway can check
         mcp_asgi = mcp.streamable_http_app()
         app = Starlette(routes=[
             Route("/health", health),
+            Route("/payments", payments),
             Mount("/", app=mcp_asgi),
         ])
 
