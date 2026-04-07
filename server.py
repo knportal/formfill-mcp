@@ -410,6 +410,137 @@ def fill_form_multipage(
 
 
 # ---------------------------------------------------------------------------
+# Tool 4 — extract_form_data
+# ---------------------------------------------------------------------------
+
+@mcp.tool()
+def extract_form_data(
+    pdf_path: Annotated[str, Field(description="Absolute path to the PDF file on disk.")],
+    api_key: Annotated[str | None, Field(description="Your FormFill API key (get one at formfill.plenitudo.ai).")] = None,
+    payment_proof: Annotated[str | None, Field(description="x402 payment proof (tx hash). Alternative to api_key for pay-per-use.")] = None,
+) -> str:
+    """Extract all form field values from a filled PDF form.
+    Returns a dict mapping field names to their current values.
+    Price: $0.001 USDC per call."""
+    # Auth: accept either API key OR x402 payment proof
+    if api_key:
+        ok, err = validate_and_charge(api_key)
+        if not ok:
+            return _auth_error(err)
+    elif payment_proof:
+        if is_proof_used(payment_proof):
+            return json.dumps({"ok": False, "error": "Payment proof already used"})
+        ok, err = verify_payment(payment_proof, PRICE_USDC, WALLET_ADDRESS)
+        if not ok:
+            return json.dumps({"ok": False, "error": f"Payment verification failed: {err}"})
+        mark_proof_used(payment_proof, "extract_form_data")
+    else:
+        return json.dumps(payment_required_response("extract_form_data"))
+
+    if not _PYPDF_OK:
+        return _auth_error("pypdf library not available on this server.")
+
+    src, err = _resolve(pdf_path)
+    if err:
+        logger.warning("extract_form_data path error: %s", err)
+        return json.dumps({"error": err, "ok": False})
+
+    try:
+        reader = PdfReader(str(src))
+        field_values = {}
+
+        for page in reader.pages:
+            annots = page.get("/Annots")
+            if annots is None:
+                continue
+            for annot in annots:
+                obj = annot.get_object() if hasattr(annot, "get_object") else annot
+                field_name = obj.get("/T")
+                field_value = obj.get("/V")
+                if field_name is not None:
+                    field_values[str(field_name)] = str(field_value) if field_value is not None else ""
+
+        logger.info("extract_form_data: %s — %d fields extracted", src.name, len(field_values))
+        return json.dumps(
+            {"ok": True, "field_count": len(field_values), "fields": field_values},
+            indent=2,
+        )
+
+    except Exception as exc:
+        logger.exception("extract_form_data failed for %s", pdf_path)
+        return json.dumps({"error": str(exc), "ok": False})
+
+
+# ---------------------------------------------------------------------------
+# Tool 5 — flatten_form
+# ---------------------------------------------------------------------------
+
+@mcp.tool()
+def flatten_form(
+    pdf_path: Annotated[str, Field(description="Absolute path to the source PDF file.")],
+    output_path: Annotated[str, Field(description="Absolute path where the flattened PDF will be saved.")],
+    api_key: Annotated[str | None, Field(description="Your FormFill API key (get one at formfill.plenitudo.ai).")] = None,
+    payment_proof: Annotated[str | None, Field(description="x402 payment proof (tx hash). Alternative to api_key for pay-per-use.")] = None,
+) -> str:
+    """Flatten a filled PDF form so form fields become non-editable static content.
+    Returns success status and output path.
+    Price: $0.001 USDC per call."""
+    # Auth: accept either API key OR x402 payment proof
+    if api_key:
+        ok, err = validate_and_charge(api_key)
+        if not ok:
+            return _auth_error(err)
+    elif payment_proof:
+        if is_proof_used(payment_proof):
+            return json.dumps({"ok": False, "error": "Payment proof already used"})
+        ok, err = verify_payment(payment_proof, PRICE_USDC, WALLET_ADDRESS)
+        if not ok:
+            return json.dumps({"ok": False, "error": f"Payment verification failed: {err}"})
+        mark_proof_used(payment_proof, "flatten_form")
+    else:
+        return json.dumps(payment_required_response("flatten_form"))
+
+    if not _PYPDF_OK:
+        return _auth_error("pypdf library not available on this server.")
+
+    src, err = _resolve(pdf_path)
+    if err:
+        logger.warning("flatten_form source error: %s", err)
+        return json.dumps({"error": err, "ok": False})
+
+    try:
+        dst = Path(output_path).expanduser().resolve()
+        dst.parent.mkdir(parents=True, exist_ok=True)
+    except Exception as exc:
+        return json.dumps({"error": f"Invalid output path: {exc}", "ok": False})
+
+    try:
+        reader = PdfReader(str(src))
+        writer = PdfWriter()
+
+        for page in reader.pages:
+            writer.add_page(page)
+
+        with open(str(dst), "wb") as fh:
+            writer.write(fh)
+
+        logger.info("flatten_form: %s → %s (%d pages)", src.name, dst.name, len(reader.pages))
+        return json.dumps(
+            {
+                "ok": True,
+                "output_path": str(dst),
+                "pages": len(reader.pages),
+                "message": f"Flattened PDF saved to {dst}",
+            },
+            indent=2,
+        )
+
+    except Exception as exc:
+        logger.exception("flatten_form failed for %s", pdf_path)
+        return json.dumps({"error": str(exc), "ok": False})
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
