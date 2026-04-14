@@ -11,7 +11,9 @@
   <p>Tax forms · HR paperwork · Legal documents · Lease agreements · Insurance claims</p>
   <p>If it has fillable fields, FormFill can fill it.</p>
 
-  **[Get API Key](https://formfill.plenitudo.ai)** · **[View on Smithery](https://smithery.ai/server/@knportal/formfill-mcp)** · Built by [Plenitudo AI](https://plenitudo.ai)
+  **[Get API Key](https://formfill.plenitudo.ai?ref=readme)** · **[View on Smithery](https://smithery.ai/server/@knportal/formfill-mcp)** · Built by [Plenitudo AI](https://plenitudo.ai)
+
+  **Listed on:** [Smithery](https://smithery.ai/server/formfill-mcp?ref=readme) · [Glama](https://glama.ai/mcp/servers/knportal/formfill-mcp?ref=readme)
 </div>
 
 ---
@@ -79,7 +81,7 @@ Any MCP-compatible host:
 | **Free** | $0 | 50 fills |
 | **Pro** | $9.99 / month | Unlimited |
 
-Get your API key at **[formfill.plenitudo.ai](https://formfill.plenitudo.ai)**
+Get your API key at **[formfill.plenitudo.ai](https://formfill.plenitudo.ai?ref=readme)**
 
 ---
 
@@ -87,7 +89,7 @@ Get your API key at **[formfill.plenitudo.ai](https://formfill.plenitudo.ai)**
 
 ### 1. Get an API key
 
-Sign up at [formfill.plenitudo.ai](https://formfill.plenitudo.ai) — free tier available immediately.
+Sign up at [formfill.plenitudo.ai](https://formfill.plenitudo.ai?ref=readme) — free tier available immediately.
 
 ### 2. Connect to Claude Desktop
 
@@ -213,7 +215,7 @@ data/usage.db      — Monthly usage counters
 ---
 
 <div align="center">
-  <strong><a href="https://formfill.plenitudo.ai">formfill.plenitudo.ai</a></strong> ·
+  <strong><a href="https://formfill.plenitudo.ai?ref=readme">formfill.plenitudo.ai</a></strong> ·
   <a href="https://github.com/knportal/formfill-mcp/issues">Issues</a> ·
   <a href="https://plenitudo.ai">Plenitudo.ai</a>
 </div>
