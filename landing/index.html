@@ -358,10 +358,26 @@
     <p>
       Built by <a href="https://plenitudo.ai" target="_blank">Plenitudo.ai</a> &nbsp;·&nbsp;
       <a href="https://smithery.ai" target="_blank">Smithery</a> &nbsp;·&nbsp;
-      <a href="https://github.com/knportal/formfill-mcp" target="_blank">GitHub</a>
+      <a href="https://github.com/knportal/formfill-mcp" target="_blank">GitHub</a> &nbsp;·&nbsp;
+      <a href="https://billing.stripe.com/p/login/14A5kC7sr5eE5aven318c00" target="_blank">Manage Subscription</a>
     </p>
     <p style="margin-top:0.5rem; font-size: 0.8rem;">© 2026 Plenitudo · FormFill MCP is not affiliated with Adobe, IRS, or any government body.</p>
   </footer>
 
+
+<script>
+  (function () {
+    var ref = new URLSearchParams(window.location.search).get('ref');
+    if (!ref) return;
+    var links = document.querySelectorAll('a[href*="buy.stripe.com"]');
+    links.forEach(function (a) {
+      var href = a.getAttribute('href');
+      if (href && href.indexOf('client_reference_id') === -1) {
+        var sep = href.indexOf('?') === -1 ? '?' : '&';
+        a.setAttribute('href', href + sep + 'client_reference_id=' + encodeURIComponent(ref));
+      }
+    });
+  })();
+</script>
 </body>
 </html>
