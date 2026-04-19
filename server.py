@@ -705,6 +705,7 @@ if __name__ == "__main__":
         mcp.run(transport="stdio")
     else:
         import uvicorn
+        from contextlib import asynccontextmanager
         from starlette.applications import Starlette
         from starlette.requests import Request
         from starlette.responses import JSONResponse
@@ -858,15 +859,27 @@ if __name__ == "__main__":
             except Exception as exc:
                 return JSONResponse({"payments": [], "server": "formfill", "error": str(exc)})
 
-        # Wrap FastMCP ASGI app with a /health endpoint Railway can check
+        # Wrap FastMCP ASGI app with a /health endpoint Railway can check.
+        # The inner MCP app has its own lifespan (starts the session manager task
+        # group). Starlette doesn't propagate sub-app lifespans, so we drive it
+        # explicitly from the outer app's lifespan.
         mcp_asgi = mcp.streamable_http_app()
-        app = Starlette(routes=[
-            Route("/health", health),
-            Route("/analytics", analytics_endpoint),
-            Route("/stats", stats_endpoint),
-            Route("/payments", payments),
-            Mount("/", app=mcp_asgi),
-        ])
+
+        @asynccontextmanager
+        async def lifespan(app):
+            async with mcp_asgi.router.lifespan_context(mcp_asgi):
+                yield
+
+        app = Starlette(
+            lifespan=lifespan,
+            routes=[
+                Route("/health", health),
+                Route("/analytics", analytics_endpoint),
+                Route("/stats", stats_endpoint),
+                Route("/payments", payments),
+                Mount("/", app=mcp_asgi),
+            ],
+        )
 
         logger.info(f"FormFill MCP server starting up (streamable-http on :{_PORT})")
         uvicorn.run(app, host="0.0.0.0", port=_PORT)
