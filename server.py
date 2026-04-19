@@ -154,7 +154,7 @@ _PORT = int(os.environ.get("PORT", 8000))
 mcp = FastMCP(
     "FormFill",
     instructions="Fill any interactive PDF form from your AI agent — tax forms, HR paperwork, legal documents — in a single tool call.",
-    host="127.0.0.1",
+    host="0.0.0.0",
     port=_PORT,
 )
 
@@ -869,4 +869,4 @@ if __name__ == "__main__":
         ])
 
         logger.info(f"FormFill MCP server starting up (streamable-http on :{_PORT})")
-        uvicorn.run(app, host="127.0.0.1", port=_PORT)
+        uvicorn.run(app, host="0.0.0.0", port=_PORT)
