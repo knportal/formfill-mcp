@@ -7,8 +7,7 @@ mcp>=1.0.0
 # PDF reading and writing
 pypdf>=4.0.0
 
-# Stripe webhook handler (stripe_webhook.py)
-flask>=3.0.0
+# Stripe billing (webhook + checkout)
 stripe>=8.0.0
 
 # Stripe signature verification needs this at runtime

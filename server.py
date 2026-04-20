@@ -859,6 +859,155 @@ if __name__ == "__main__":
             except Exception as exc:
                 return JSONResponse({"payments": [], "server": "formfill", "error": str(exc)})
 
+        # ---------------------------------------------------------------------------
+        # Stripe webhook — integrated into main Starlette app (replaces port-8090 Flask)
+        # ---------------------------------------------------------------------------
+        async def stripe_webhook_handler(request: Request):
+            import stripe as _stripe
+            from config import STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
+            from auth import set_key_tier
+
+            if not STRIPE_WEBHOOK_SECRET:
+                logger.error("STRIPE_WEBHOOK_SECRET not configured")
+                return JSONResponse({"error": "Webhook not configured"}, status_code=500)
+
+            _stripe.api_key = STRIPE_SECRET_KEY
+            payload = await request.body()
+            sig_header = request.headers.get("stripe-signature", "")
+
+            try:
+                event = _stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
+            except ValueError:
+                return JSONResponse({"error": "Invalid payload"}, status_code=400)
+            except _stripe.error.SignatureVerificationError:
+                return JSONResponse({"error": "Invalid signature"}, status_code=400)
+
+            event_type = event["type"]
+            data = event["data"]["object"]
+            logger.info("Stripe event: %s id=%s", event_type, event["id"])
+
+            customer_id = data.get("customer")
+            api_key = data.get("metadata", {}).get("formfill_api_key")
+            if not api_key and customer_id:
+                try:
+                    customer = _stripe.Customer.retrieve(customer_id)
+                    api_key = customer.get("metadata", {}).get("formfill_api_key")
+                except Exception as exc:
+                    logger.error("Failed to retrieve Stripe customer %s: %s", customer_id, exc)
+
+            if event_type == "customer.subscription.created" and api_key:
+                set_key_tier(api_key, "pro", stripe_customer=customer_id)
+                logger.info("Upgraded key %s… to pro", api_key[:16])
+            elif event_type == "customer.subscription.deleted" and api_key:
+                set_key_tier(api_key, "free", stripe_customer=customer_id)
+                logger.info("Downgraded key %s… to free", api_key[:16])
+
+            return JSONResponse({"ok": True})
+
+        # ---------------------------------------------------------------------------
+        # POST /api/signup — issue a free API key (no payment needed)
+        # ---------------------------------------------------------------------------
+        async def api_signup(request: Request):
+            try:
+                body = await request.json()
+            except Exception:
+                return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
+
+            email = (body.get("email") or "").strip()
+            if not email or "@" not in email:
+                return JSONResponse({"error": "Valid email is required"}, status_code=400)
+
+            from auth import create_key
+            from config import FREE_MONTHLY_LIMIT
+            api_key = create_key(tier="free")
+            logger.info("Free key issued email=%s key=%s…", email[:30], api_key[:16])
+
+            return JSONResponse({
+                "api_key": api_key,
+                "tier": "free",
+                "monthly_limit": FREE_MONTHLY_LIMIT,
+                "message": f"Your free key gives you {FREE_MONTHLY_LIMIT} fills/month. "
+                           "Pass it as the api_key parameter to any FormFill tool.",
+                "upgrade_url": "https://formfill.plenitudo.ai/upgrade",
+            })
+
+        # ---------------------------------------------------------------------------
+        # POST /api/checkout — create a Stripe checkout session to upgrade to Pro
+        # ---------------------------------------------------------------------------
+        async def api_checkout(request: Request):
+            import stripe as _stripe
+            from config import STRIPE_SECRET_KEY, STRIPE_PRO_PRICE_ID
+
+            if not STRIPE_SECRET_KEY or not STRIPE_PRO_PRICE_ID:
+                return JSONResponse({"error": "Stripe not configured on this server"}, status_code=503)
+
+            _stripe.api_key = STRIPE_SECRET_KEY
+
+            try:
+                body = await request.json()
+            except Exception:
+                return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
+
+            api_key = (body.get("api_key") or "").strip()
+            email = (body.get("email") or "").strip()
+
+            if not api_key:
+                return JSONResponse({"error": "api_key is required"}, status_code=400)
+
+            try:
+                session = _stripe.checkout.Session.create(
+                    mode="subscription",
+                    line_items=[{"price": STRIPE_PRO_PRICE_ID, "quantity": 1}],
+                    customer_email=email or None,
+                    metadata={"formfill_api_key": api_key},
+                    success_url="https://formfill.plenitudo.ai/success?session_id={CHECKOUT_SESSION_ID}",
+                    cancel_url="https://formfill.plenitudo.ai/pricing",
+                )
+            except Exception as exc:
+                logger.error("Stripe checkout creation failed: %s", exc)
+                return JSONResponse({"error": "Failed to create checkout session"}, status_code=500)
+
+            return JSONResponse({"checkout_url": session.url})
+
+        # ---------------------------------------------------------------------------
+        # GET /api/key-info?api_key=ff_free_...
+        # ---------------------------------------------------------------------------
+        async def api_key_info(request: Request):
+            from auth import get_usage
+            from config import FREE_MONTHLY_LIMIT, KEYS_DB
+            import sqlite3 as _sq
+
+            api_key = request.query_params.get("api_key", "").strip()
+            if not api_key:
+                return JSONResponse({"error": "api_key query parameter required"}, status_code=400)
+
+            try:
+                conn = _sq.connect(KEYS_DB)
+                conn.row_factory = _sq.Row
+                row = conn.execute(
+                    "SELECT tier, active, created_at FROM api_keys WHERE key = ?", (api_key,)
+                ).fetchone()
+                conn.close()
+            except Exception:
+                return JSONResponse({"error": "Database error"}, status_code=500)
+
+            if row is None:
+                return JSONResponse({"error": "API key not found"}, status_code=404)
+            if not row["active"]:
+                return JSONResponse({"error": "API key is deactivated"}, status_code=403)
+
+            usage = get_usage(api_key)
+            tier = row["tier"]
+
+            return JSONResponse({
+                "api_key": api_key[:16] + "…",
+                "tier": tier,
+                "created_at": row["created_at"],
+                "monthly_limit": None if tier == "pro" else FREE_MONTHLY_LIMIT,
+                "current_month_fills": usage["current_month_fills"],
+                "total_fills": usage["total_fills"],
+            })
+
         # Wrap FastMCP ASGI app with a /health endpoint Railway can check.
         # The inner MCP app has its own lifespan (starts the session manager task
         # group). Starlette doesn't propagate sub-app lifespans, so we drive it
@@ -877,6 +1026,10 @@ if __name__ == "__main__":
                 Route("/analytics", analytics_endpoint),
                 Route("/stats", stats_endpoint),
                 Route("/payments", payments),
+                Route("/webhook/stripe", stripe_webhook_handler, methods=["POST"]),
+                Route("/api/signup", api_signup, methods=["POST"]),
+                Route("/api/checkout", api_checkout, methods=["POST"]),
+                Route("/api/key-info", api_key_info, methods=["GET"]),
                 Mount("/", app=mcp_asgi),
             ],
         )
