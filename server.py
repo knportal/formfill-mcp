@@ -1027,6 +1027,7 @@ if __name__ == "__main__":
                 Route("/stats", stats_endpoint),
                 Route("/payments", payments),
                 Route("/webhook/stripe", stripe_webhook_handler, methods=["POST"]),
+                Route("/stripe-webhook", stripe_webhook_handler, methods=["POST"]),
                 Route("/api/signup", api_signup, methods=["POST"]),
                 Route("/api/checkout", api_checkout, methods=["POST"]),
                 Route("/api/key-info", api_key_info, methods=["GET"]),
