@@ -1,4 +1,37 @@
 {
   "$schema": "https://glama.ai/mcp/schemas/server.json",
-  "maintainers": ["knportal"]
+  "maintainers": ["knportal"],
+  "name": "FormFill MCP",
+  "description": "Fill any PDF form from your AI agent in a single tool call. Supports fillable PDFs, multi-page forms, and pay-per-use via x402 or API key.",
+  "license": "MIT",
+  "categories": ["productivity", "documents"],
+  "tools": [
+    {
+      "name": "list_form_fields",
+      "description": "Inspect a PDF and return every fillable field name, type, and current value."
+    },
+    {
+      "name": "fill_form",
+      "description": "Fill a PDF form with the given field values and save the result to disk."
+    },
+    {
+      "name": "fill_form_multipage",
+      "description": "Fill a multi-page PDF form, iterating page-by-page for reliability on complex or long documents."
+    },
+    {
+      "name": "extract_form_data",
+      "description": "Extract all form field values from a filled PDF form."
+    },
+    {
+      "name": "flatten_form",
+      "description": "Flatten a filled PDF form so form fields become non-editable static content."
+    }
+  ],
+  "env": [
+    {
+      "name": "FORMFILL_API_KEY",
+      "description": "Your FormFill API key. Get one at https://formfill.plenitudo.ai",
+      "required": false
+    }
+  ]
 }
