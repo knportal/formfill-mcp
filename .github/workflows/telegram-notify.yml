@@ -9,13 +9,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Send Telegram notification
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_CHAT_ID }}
-          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          format: html
-          message: |
-            <b>FormFill MCP — New Push</b>
-            Branch: <code>${{ github.ref_name }}</code>
-            By: ${{ github.actor }}
-            <code>${{ github.event.head_commit.message }}</code>
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          MSG="<b>FormFill MCP</b> push to <code>${{ github.ref_name }}</code>%0ABy: ${{ github.actor }}%0ASHA: <code>${SHORT_SHA}</code>"
+          curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${CHAT_ID}" \
+            -d "parse_mode=HTML" \
+            -d "text=${MSG}" | grep -q '"ok":true' && echo "sent" || echo "failed"
