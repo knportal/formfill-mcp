@@ -13,12 +13,9 @@ jobs:
         with:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          format: markdown
+          format: html
           message: |
-            *formfill-mcp — New Push*
-
-            *Branch:* `${{ github.ref_name }}`
-            *By:* ${{ github.actor }}
-            *Commit:* `${{ github.sha }}`
-
-            ${{ github.event.head_commit.message }}
+            <b>FormFill MCP — New Push</b>
+            Branch: <code>${{ github.ref_name }}</code>
+            By: ${{ github.actor }}
+            <code>${{ github.event.head_commit.message }}</code>
