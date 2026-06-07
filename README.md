@@ -18,7 +18,6 @@
 
 ---
 
-<!-- Add demo GIF here once recorded: replace the comment with: ![FormFill Demo](assets/demo.gif) -->
 
 ## How It Works
 
@@ -99,14 +98,19 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 {
   "mcpServers": {
     "formfill": {
-      "command": "/Users/YOUR_USERNAME/Projects/formfill-mcp/venv/bin/python",
-      "args": ["/Users/YOUR_USERNAME/Projects/formfill-mcp/server.py"]
+      "command": "/absolute/path/to/formfill-mcp/venv/bin/python",
+      "args": ["/absolute/path/to/formfill-mcp/server.py", "--stdio"]
     }
   }
 }
 ```
 
-Restart Claude Desktop. You'll see the 🔨 tools icon — FormFill is connected.
+Replace the paths with your actual install location. Fully quit and reopen Claude Desktop (Cmd+Q — just closing the window is not enough). You'll see the 🔨 tools icon — FormFill is connected.
+
+**Remote HTTP endpoint** (Cursor, Cline, any HTTP MCP client):
+```
+https://formfill.plenitudo.ai/mcp
+```
 
 ### 3. Fill your first form
 
@@ -200,6 +204,32 @@ manage_keys.py     — Key management CLI
 data/keys.db       — API key store
 data/usage.db      — Monthly usage counters
 ```
+
+---
+
+## Troubleshooting
+
+**Values fill into the wrong fields**
+Always call `list_form_fields` first. It returns each field's `position` (x, y on page). Use those coordinates — not guessed names — to identify fields. Higher `y` = higher on the page (PDF coordinates are bottom-up). This matters most for IRS/government PDFs that use hybrid XFA/AcroForm format.
+
+**"No fillable fields found"**
+The PDF is either flat/scanned (no AcroForm layer), XFA-only (older Adobe LiveCycle format), or password-protected. The response includes `pdf_type` to tell you which. FormFill requires interactive AcroForm fields.
+
+**"None of the provided field names exist in this PDF"**
+Field names were guessed rather than read from `list_form_fields`. The error response includes `valid_fields` — the correct names to use.
+
+**Claude Desktop: "not a valid MCP server configuration"**
+Use `command`/`args` format (not `url` or `type: streamableHttp`). Include `"--stdio"` in args. Fully quit and reopen Claude Desktop after editing the config.
+
+**Server crashes: "Read-only file system: ./logs"**
+Set `FORMFILL_LOG_FILE` to a writable path, or ensure `FORMFILL_DATA_DIR` points to a writable directory. The default `~/Library/Logs/formfill-mcp/server.log` works without config on macOS.
+
+**API key limit reached**
+Free tier: 50 fills/month. Upgrade at [formfill.plenitudo.ai](https://formfill.plenitudo.ai?ref=readme). Your key is upgraded automatically — no config change needed.
+
+**Check server health**
+- `GET https://formfill.plenitudo.ai/health` → `{"status":"ok"}`
+- `GET https://formfill.plenitudo.ai/smoke-test` → fills a real PDF end-to-end, returns pass/fail per component
 
 ---
 

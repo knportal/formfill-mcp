@@ -17,226 +17,160 @@
       --text: #e8e8f0;
       --muted: #8888aa;
       --green: #4ade80;
+      --red: #f87171;
       --mono: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
     }
 
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      line-height: 1.6;
-    }
-
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; }
     a { color: var(--accent-light); text-decoration: none; }
     a:hover { text-decoration: underline; }
 
     /* NAV */
-    nav {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1.25rem 2rem;
-      border-bottom: 1px solid var(--border);
-    }
+    nav { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 2rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 100; }
     .logo { font-weight: 700; font-size: 1.05rem; letter-spacing: -0.02em; }
     .logo span { color: var(--accent-light); }
     .nav-links { display: flex; gap: 2rem; font-size: 0.9rem; color: var(--muted); }
     .nav-links a { color: var(--muted); }
     .nav-links a:hover { color: var(--text); }
-    .nav-cta {
-      background: var(--accent);
-      color: #fff;
-      padding: 0.45rem 1.1rem;
-      border-radius: 6px;
-      font-size: 0.9rem;
-      font-weight: 600;
-    }
+    .nav-cta { background: var(--accent); color: #fff; padding: 0.45rem 1.1rem; border-radius: 6px; font-size: 0.9rem; font-weight: 600; }
     .nav-cta:hover { background: var(--accent-light); text-decoration: none; }
 
     /* HERO */
-    .hero {
-      max-width: 760px;
-      margin: 5rem auto 4rem;
-      padding: 0 2rem;
-      text-align: center;
-    }
-    .hero-badge {
-      display: inline-block;
-      background: rgba(124,111,205,0.15);
-      border: 1px solid rgba(124,111,205,0.3);
-      color: var(--accent-light);
-      font-size: 0.75rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      padding: 0.3rem 0.9rem;
-      border-radius: 100px;
-      margin-bottom: 1.5rem;
-    }
-    h1 {
-      font-size: clamp(2rem, 5vw, 3.2rem);
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      line-height: 1.15;
-      margin-bottom: 1.25rem;
-    }
+    .hero { max-width: 760px; margin: 5rem auto 4rem; padding: 0 2rem; text-align: center; }
+    .hero-badge { display: inline-block; background: rgba(124,111,205,0.15); border: 1px solid rgba(124,111,205,0.3); color: var(--accent-light); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.3rem 0.9rem; border-radius: 100px; margin-bottom: 1.5rem; }
+    h1 { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1.15; margin-bottom: 1.25rem; }
     h1 em { font-style: normal; color: var(--accent-light); }
-    .hero-sub {
-      font-size: 1.15rem;
-      color: var(--muted);
-      max-width: 560px;
-      margin: 0 auto 2.5rem;
-    }
+    .hero-sub { font-size: 1.15rem; color: var(--muted); max-width: 560px; margin: 0 auto 2.5rem; }
     .hero-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
-    .btn-primary {
-      background: var(--accent);
-      color: #fff;
-      padding: 0.75rem 1.75rem;
-      border-radius: 8px;
-      font-weight: 700;
-      font-size: 1rem;
-    }
+    .btn-primary { background: var(--accent); color: #fff; padding: 0.75rem 1.75rem; border-radius: 8px; font-weight: 700; font-size: 1rem; }
     .btn-primary:hover { background: var(--accent-light); text-decoration: none; }
-    .btn-secondary {
-      border: 1px solid var(--border);
-      color: var(--muted);
-      padding: 0.75rem 1.75rem;
-      border-radius: 8px;
-      font-size: 1rem;
-    }
+    .btn-secondary { border: 1px solid var(--border); color: var(--muted); padding: 0.75rem 1.75rem; border-radius: 8px; font-size: 1rem; }
     .btn-secondary:hover { border-color: var(--accent); color: var(--text); text-decoration: none; }
 
     /* CODE BLOCK */
-    .code-preview {
-      max-width: 700px;
-      margin: 3rem auto 5rem;
-      padding: 0 2rem;
-    }
-    .code-block {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-    }
-    .code-header {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.75rem 1.25rem;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.8rem;
-      color: var(--muted);
-    }
+    .code-preview { max-width: 700px; margin: 3rem auto 5rem; padding: 0 2rem; }
+    .code-block { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .code-header { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--border); font-size: 0.8rem; color: var(--muted); }
     .dot { width: 10px; height: 10px; border-radius: 50%; }
-    .dot-r { background: #ff5f57; }
-    .dot-y { background: #febc2e; }
-    .dot-g { background: #28c840; }
-    .code-body {
-      padding: 1.5rem;
-      font-family: var(--mono);
-      font-size: 0.82rem;
-      line-height: 1.7;
-      overflow-x: auto;
-    }
-    .kw { color: #c792ea; }
-    .str { color: #c3e88d; }
-    .key { color: #82aaff; }
-    .val { color: #f78c6c; }
-    .cmt { color: #546e7a; }
+    .dot-r { background: #ff5f57; } .dot-y { background: #febc2e; } .dot-g { background: #28c840; }
+    .code-body { padding: 1.5rem; font-family: var(--mono); font-size: 0.82rem; line-height: 1.7; overflow-x: auto; }
+    .kw { color: #c792ea; } .str { color: #c3e88d; } .key { color: #82aaff; } .val { color: #f78c6c; } .cmt { color: #546e7a; }
 
-    /* USE CASES */
+    /* SECTIONS */
     section { max-width: 900px; margin: 0 auto; padding: 4rem 2rem; }
     h2 { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+    h3 { font-size: 1.1rem; font-weight: 700; }
     .section-sub { color: var(--muted); margin-bottom: 3rem; }
 
+    /* CARDS */
     .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.25rem; }
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.5rem;
-    }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; }
     .card-icon { font-size: 1.6rem; margin-bottom: 0.75rem; }
     .card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
     .card p { font-size: 0.9rem; color: var(--muted); }
 
+    /* SETUP STEPS */
+    .steps { display: flex; flex-direction: column; gap: 1.5rem; }
+    .step { display: flex; gap: 1.25rem; align-items: flex-start; }
+    .step-num { flex-shrink: 0; width: 2rem; height: 2rem; border-radius: 50%; background: rgba(124,111,205,0.2); border: 1px solid var(--accent); color: var(--accent-light); font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; margin-top: 0.15rem; }
+    .step-body h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.35rem; }
+    .step-body p { font-size: 0.9rem; color: var(--muted); }
+    .step-body code { font-family: var(--mono); font-size: 0.8rem; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 0.1rem 0.4rem; color: var(--accent-light); }
+    .step-body pre { margin-top: 0.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; font-family: var(--mono); font-size: 0.8rem; line-height: 1.6; overflow-x: auto; color: var(--text); }
+
     /* PRICING */
     .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; }
-    .plan {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 2rem;
-    }
+    .plan { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 2rem; }
     .plan.featured { border-color: var(--accent); }
-    .plan-badge {
-      display: inline-block;
-      background: var(--accent);
-      color: #fff;
-      font-size: 0.7rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      padding: 0.2rem 0.6rem;
-      border-radius: 4px;
-      margin-bottom: 1rem;
-    }
+    .plan-badge { display: inline-block; background: var(--accent); color: #fff; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.2rem 0.6rem; border-radius: 4px; margin-bottom: 1rem; }
     .plan-name { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.25rem; }
     .plan-price { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.04em; }
     .plan-price span { font-size: 1rem; font-weight: 400; color: var(--muted); }
     .plan-desc { color: var(--muted); font-size: 0.9rem; margin: 0.75rem 0 1.5rem; }
     .plan-features { list-style: none; }
-    .plan-features li {
-      font-size: 0.9rem;
-      color: var(--muted);
-      padding: 0.4rem 0;
-      border-top: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-    }
+    .plan-features li { font-size: 0.9rem; color: var(--muted); padding: 0.4rem 0; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 0.6rem; }
     .plan-features li::before { content: '✓'; color: var(--green); font-weight: 700; }
-    .plan-cta {
-      display: block;
-      text-align: center;
-      margin-top: 1.75rem;
-      padding: 0.7rem;
-      border-radius: 8px;
-      font-weight: 700;
-      font-size: 0.95rem;
-    }
-    .plan-cta-outline {
-      border: 1px solid var(--border);
-      color: var(--muted);
-    }
+    .plan-cta { display: block; text-align: center; margin-top: 1.75rem; padding: 0.7rem; border-radius: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; }
+    .plan-cta-outline { border: 1px solid var(--border); color: var(--muted); background: none; }
     .plan-cta-outline:hover { border-color: var(--accent); color: var(--text); text-decoration: none; }
-    .plan-cta-filled { background: var(--accent); color: #fff; }
+    .plan-cta-filled { background: var(--accent); color: #fff; border: none; }
     .plan-cta-filled:hover { background: var(--accent-light); text-decoration: none; }
+
+    /* SIGNUP MODAL */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; padding: 1rem; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 2rem; max-width: 440px; width: 100%; position: relative; }
+    .modal h3 { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .modal p { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
+    .modal label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--muted); margin-bottom: 0.4rem; }
+    .modal input { width: 100%; padding: 0.65rem 0.9rem; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 0.95rem; outline: none; }
+    .modal input:focus { border-color: var(--accent); }
+    .modal-submit { margin-top: 1.25rem; width: 100%; padding: 0.75rem; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; }
+    .modal-submit:hover { background: var(--accent-light); }
+    .modal-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+    .modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: var(--muted); font-size: 1.25rem; cursor: pointer; line-height: 1; }
+    .modal-close:hover { color: var(--text); }
+    .modal-result { display: none; margin-top: 1rem; padding: 1rem; border-radius: 8px; font-size: 0.85rem; }
+    .modal-result.success { background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.3); color: var(--green); }
+    .modal-result.error { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3); color: var(--red); }
+    .key-display { font-family: var(--mono); font-size: 0.82rem; word-break: break-all; margin-top: 0.5rem; padding: 0.75rem; background: var(--bg); border-radius: 6px; border: 1px solid var(--border); color: var(--accent-light); }
+
+    /* FAQ / TROUBLESHOOTING */
+    .faq-list { display: flex; flex-direction: column; gap: 0; }
+    .faq-item { border-top: 1px solid var(--border); }
+    .faq-item:last-child { border-bottom: 1px solid var(--border); }
+    .faq-q { width: 100%; background: none; border: none; color: var(--text); text-align: left; padding: 1.1rem 0; font-size: 0.95rem; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+    .faq-q:hover { color: var(--accent-light); }
+    .faq-arrow { color: var(--muted); font-size: 0.85rem; flex-shrink: 0; transition: transform 0.2s; }
+    .faq-item.open .faq-arrow { transform: rotate(180deg); }
+    .faq-a { display: none; padding-bottom: 1.1rem; font-size: 0.9rem; color: var(--muted); line-height: 1.7; }
+    .faq-item.open .faq-a { display: block; }
+    .faq-a code { font-family: var(--mono); font-size: 0.8rem; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 0.1rem 0.4rem; color: var(--accent-light); }
+    .faq-a pre { margin: 0.75rem 0; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; font-family: var(--mono); font-size: 0.8rem; line-height: 1.6; overflow-x: auto; color: var(--text); }
+
+    /* SUPPORT */
+    .support-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; }
+    .support-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; text-align: center; }
+    .support-card .icon { font-size: 1.8rem; margin-bottom: 0.75rem; }
+    .support-card h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .support-card p { font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem; }
+    .support-card a { display: inline-block; padding: 0.5rem 1rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; color: var(--muted); }
+    .support-card a:hover { border-color: var(--accent); color: var(--text); text-decoration: none; }
 
     /* DIVIDER */
     hr { border: none; border-top: 1px solid var(--border); }
 
     /* FOOTER */
-    footer {
-      text-align: center;
-      padding: 2.5rem 2rem;
-      font-size: 0.85rem;
-      color: var(--muted);
-    }
+    footer { text-align: center; padding: 2.5rem 2rem; font-size: 0.85rem; color: var(--muted); }
     footer a { color: var(--muted); }
     footer a:hover { color: var(--text); }
   </style>
 </head>
 <body>
 
+  <!-- FREE KEY MODAL -->
+  <div class="modal-overlay" id="signupModal">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+      <h3>Get your free API key</h3>
+      <p>50 form fills per month, no credit card required.</p>
+      <label for="signupEmail">Email address</label>
+      <input type="email" id="signupEmail" placeholder="you@example.com" />
+      <button class="modal-submit" id="signupBtn" onclick="submitSignup()">Get Free Key</button>
+      <div class="modal-result" id="signupResult"></div>
+    </div>
+  </div>
+
   <nav>
     <div class="logo">FormFill <span>MCP</span></div>
     <div class="nav-links">
-      <a href="#use-cases">Use Cases</a>
+      <a href="#setup">Setup</a>
       <a href="#pricing">Pricing</a>
+      <a href="#troubleshooting">Troubleshooting</a>
+      <a href="#support">Support</a>
       <a href="https://github.com/knportal/formfill-mcp" target="_blank">Docs</a>
     </div>
-    <a class="nav-cta" href="https://buy.stripe.com/14A5kC7sr5eE5aven318c00" target="_blank">Get API Key</a>
+    <a class="nav-cta" href="#" onclick="openModal(); return false;">Get API Key</a>
   </nav>
 
   <div class="hero">
@@ -246,36 +180,34 @@
       Tax documents, HR paperwork, legal contracts — FormFill MCP turns structured data into completed PDFs in a single tool call.
     </p>
     <div class="hero-actions">
-      <a class="btn-primary" href="https://buy.stripe.com/14A5kC7sr5eE5aven318c00" target="_blank">Get Free API Key</a>
-      <a class="btn-secondary" href="https://smithery.ai" target="_blank">View on Smithery</a>
+      <a class="btn-primary" href="#" onclick="openModal(); return false;">Get Free API Key</a>
+      <a class="btn-secondary" href="#setup">See Setup Guide</a>
     </div>
   </div>
 
   <div class="code-preview">
     <div class="code-block">
       <div class="code-header">
-        <div class="dot dot-r"></div>
-        <div class="dot dot-y"></div>
-        <div class="dot dot-g"></div>
-        <span style="margin-left:0.5rem">Example tool call</span>
+        <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+        <span style="margin-left:0.5rem">Step 1: discover fields &nbsp;·&nbsp; Step 2: fill them</span>
       </div>
-      <div class="code-body"><pre><span class="cmt">// Agent fills a W-9 in one call</span>
-{
-  <span class="key">"tool"</span>: <span class="str">"fill_form"</span>,
-  <span class="key">"parameters"</span>: {
-    <span class="key">"pdf_path"</span>: <span class="str">"/forms/w9_blank.pdf"</span>,
-    <span class="key">"field_values"</span>: {
-      <span class="key">"f1_01"</span>: <span class="str">"Alice Johnson"</span>,
-      <span class="key">"f1_02"</span>: <span class="str">"Alice's Consulting LLC"</span>,
-      <span class="key">"f1_07"</span>: <span class="str">"12-3456789"</span>
-    },
-    <span class="key">"output_path"</span>: <span class="str">"/forms/w9_filled.pdf"</span>,
-    <span class="key">"api_key"</span>: <span class="str">"ff_free_..."</span>
-  }
-}
+      <div class="code-body"><pre><span class="cmt">// Step 1 — inspect the PDF to get exact field names + positions</span>
+{ <span class="key">"tool"</span>: <span class="str">"list_form_fields"</span>, <span class="key">"parameters"</span>: { <span class="key">"pdf_path"</span>: <span class="str">"/forms/w9.pdf"</span>, <span class="key">"api_key"</span>: <span class="str">"ff_..."</span> } }
 
-<span class="cmt">// Response</span>
-{ <span class="key">"ok"</span>: <span class="val">true</span>, <span class="key">"fields_filled"</span>: <span class="val">3</span>, <span class="key">"pages"</span>: <span class="val">1</span> }</pre>
+<span class="cmt">// Response — every field with name, type, and page position</span>
+{ <span class="key">"ok"</span>: <span class="val">true</span>, <span class="key">"pdf_type"</span>: <span class="str">"hybrid_xfa_acroform"</span>, <span class="key">"fields"</span>: {
+    <span class="key">"f1_01[0]"</span>: { <span class="key">"type"</span>: <span class="str">"text"</span>, <span class="key">"position"</span>: { <span class="key">"y"</span>: <span class="val">660</span>, <span class="key">"x"</span>: <span class="val">59</span> } },  <span class="cmt">← Name (top of page)</span>
+    <span class="key">"f1_07[0]"</span>: { <span class="key">"type"</span>: <span class="str">"text"</span>, <span class="key">"position"</span>: { <span class="key">"y"</span>: <span class="val">492</span>, <span class="key">"x"</span>: <span class="val">59</span> } },  <span class="cmt">← Address</span>
+    <span class="key">"f1_14[0]"</span>: { <span class="key">"type"</span>: <span class="str">"text"</span>, <span class="key">"position"</span>: { <span class="key">"y"</span>: <span class="val">348</span>, <span class="key">"x"</span>: <span class="val">418</span> } }  <span class="cmt">← EIN</span>
+} }
+
+<span class="cmt">// Step 2 — fill with the exact field names from step 1</span>
+{ <span class="key">"tool"</span>: <span class="str">"fill_form"</span>, <span class="key">"parameters"</span>: {
+    <span class="key">"pdf_path"</span>: <span class="str">"/forms/w9.pdf"</span>,
+    <span class="key">"field_values"</span>: { <span class="key">"f1_01[0]"</span>: <span class="str">"Alice Johnson"</span>, <span class="key">"f1_07[0]"</span>: <span class="str">"123 Main St"</span> },
+    <span class="key">"output_path"</span>: <span class="str">"/forms/w9_filled.pdf"</span>, <span class="key">"api_key"</span>: <span class="str">"ff_..."</span>
+} }
+<span class="cmt">// → { "ok": true, "fields_filled": 2, "pdf_type": "hybrid_xfa_acroform" }</span></pre>
       </div>
     </div>
   </div>
@@ -284,31 +216,58 @@
     <h2>Built for agent workflows</h2>
     <p class="section-sub">Wherever an agent needs to output a completed form, FormFill handles the last mile.</p>
     <div class="cards">
-      <div class="card">
-        <div class="card-icon">🧾</div>
-        <h3>Tax Preparation</h3>
-        <p>Agents collect W-2 data through conversation, then auto-populate IRS 1040, W-9, and state forms — ready to sign.</p>
+      <div class="card"><div class="card-icon">🧾</div><h3>Tax Preparation</h3><p>Agents collect W-2 data through conversation, then auto-populate IRS 1040, W-9, and state forms — ready to sign.</p></div>
+      <div class="card"><div class="card-icon">🏢</div><h3>HR Onboarding</h3><p>Walk new hires through onboarding in chat, then fill I-9s, direct deposit forms, and benefits paperwork automatically.</p></div>
+      <div class="card"><div class="card-icon">⚖️</div><h3>Legal Documents</h3><p>Populate NDA templates, court filing forms, and contract paperwork from structured intake — hours of work in seconds.</p></div>
+      <div class="card"><div class="card-icon">🏠</div><h3>Real Estate</h3><p>Listing agreements, disclosure forms, rental applications — any AcroForm PDF in the workflow.</p></div>
+    </div>
+  </section>
+
+  <hr />
+
+  <!-- SETUP GUIDE -->
+  <section id="setup">
+    <h2>Set up in 3 steps</h2>
+    <p class="section-sub">Works with Claude Desktop, Cursor, Cline, and any MCP-compatible host.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h3>Get your API key</h3>
+          <p>Click <a href="#" onclick="openModal(); return false;">Get Free API Key</a> — enter your email and your key is issued instantly. No credit card required.</p>
+        </div>
       </div>
-      <div class="card">
-        <div class="card-icon">🏢</div>
-        <h3>HR Onboarding</h3>
-        <p>Walk new hires through onboarding in chat, then fill I-9s, direct deposit forms, and benefits paperwork automatically.</p>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h3>Add to your MCP host</h3>
+          <p>For <strong>Claude Desktop</strong>, open <code>~/Library/Application Support/Claude/claude_desktop_config.json</code> and add:</p>
+          <pre>{
+  "mcpServers": {
+    "formfill": {
+      "command": "npx",
+      "args": ["-y", "@knportal/formfill-mcp"],
+      "env": { "FORMFILL_API_KEY": "ff_your_key_here" }
+    }
+  }
+}</pre>
+          <p style="margin-top:0.75rem">For <strong>remote access</strong> (Cursor, Cline, any HTTP MCP client), use the streamable HTTP endpoint:</p>
+          <pre>https://formfill.plenitudo.ai/mcp</pre>
+        </div>
       </div>
-      <div class="card">
-        <div class="card-icon">⚖️</div>
-        <h3>Legal Documents</h3>
-        <p>Populate NDA templates, court filing forms, and contract paperwork from structured intake — hours of work in seconds.</p>
-      </div>
-      <div class="card">
-        <div class="card-icon">🏠</div>
-        <h3>Real Estate</h3>
-        <p>Listing agreements, disclosure forms, rental applications — any AcroForm PDF in the workflow.</p>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h3>Restart and test</h3>
+          <p>Restart your MCP host (Claude Desktop requires a full quit and reopen). Then ask your agent: <em>"List the fields in /path/to/form.pdf"</em> — you should see the field names returned.</p>
+        </div>
       </div>
     </div>
   </section>
 
   <hr />
 
+  <!-- PRICING -->
   <section id="pricing">
     <h2>Simple pricing</h2>
     <p class="section-sub">No credit card required to get started.</p>
@@ -319,11 +278,11 @@
         <div class="plan-desc">For evaluation and low-volume workflows.</div>
         <ul class="plan-features">
           <li>50 form fills / month</li>
-          <li>All three MCP tools</li>
+          <li>All 5 MCP tools</li>
           <li>Multi-page PDF support</li>
-          <li>Instant API key</li>
+          <li>Instant API key — no card</li>
         </ul>
-        <a class="plan-cta plan-cta-outline" href="https://buy.stripe.com/14A5kC7sr5eE5aven318c00" target="_blank">Get Free Key</a>
+        <a class="plan-cta plan-cta-outline" href="#" onclick="openModal(); return false;">Get Free Key</a>
       </div>
       <div class="plan featured">
         <div class="plan-badge">Most Popular</div>
@@ -332,12 +291,144 @@
         <div class="plan-desc">For production agents and high-volume use.</div>
         <ul class="plan-features">
           <li>Unlimited form fills</li>
-          <li>All three MCP tools</li>
+          <li>All 5 MCP tools</li>
           <li>Multi-page PDF support</li>
           <li>Priority support</li>
           <li>Usage dashboard</li>
         </ul>
-        <a class="plan-cta plan-cta-filled" href="https://buy.stripe.com/14A5kC7sr5eE5aven318c00" target="_blank">Start Pro</a>
+        <a class="plan-cta plan-cta-filled" href="#" onclick="openProCheckout(); return false;">Start Pro →</a>
+      </div>
+    </div>
+  </section>
+
+  <hr />
+
+  <!-- TROUBLESHOOTING / FAQ -->
+  <section id="troubleshooting">
+    <h2>Troubleshooting</h2>
+    <p class="section-sub">Common issues and how to fix them.</p>
+    <div class="faq-list">
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          My MCP host says "not a valid MCP server configuration" <span class="faq-arrow">▾</span>
+        </button>
+        <div class="faq-a">
+          <p>Make sure your config uses <code>command</code> and <code>args</code> — not a <code>url</code> or <code>type: streamableHttp</code> block. The correct format for Claude Desktop is:</p>
+          <pre>{
+  "mcpServers": {
+    "formfill": {
+      "command": "/path/to/python",
+      "args": ["/path/to/server.py", "--stdio"]
+    }
+  }
+}</pre>
+          <p>After editing, fully quit and reopen Claude Desktop (Cmd+Q, not just close the window).</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Values are going into the wrong fields on my PDF <span class="faq-arrow">▾</span>
+        </button>
+        <div class="faq-a">
+          <p>Never guess field names. Always call <code>list_form_fields</code> first — it now returns each field's <code>position</code> (x, y coordinates on the page). Use those coordinates to identify which field is which:</p>
+          <ul style="padding-left:1.25rem; margin-top:0.5rem; font-size:0.9rem; color:var(--muted);">
+            <li>Higher <code>y</code> = higher on the page (PDF y-axis is bottom-up)</li>
+            <li>Fields with similar <code>y</code> are on the same horizontal line</li>
+            <li>Fields with similar <code>x</code> are in the same column</li>
+          </ul>
+          <p style="margin-top:0.75rem">This is especially important for IRS and government PDFs, which use a hybrid XFA/AcroForm format where field names like <code>f1_06[0]</code> give no visual hint about their location.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          <code>list_form_fields</code> returns "No fillable fields found" <span class="faq-arrow">▾</span>
+        </button>
+        <div class="faq-a">
+          <p>The PDF may be:</p>
+          <ul style="padding-left:1.25rem; margin-top:0.5rem; font-size:0.9rem; color:var(--muted);">
+            <li><strong>Flat / scanned</strong> — a scanned image disguised as a PDF. FormFill requires interactive AcroForm fields. Check in Adobe Acrobat by looking for the blue field highlights.</li>
+            <li><strong>XFA-only</strong> — some older Adobe LiveCycle PDFs use a format that can't be filled programmatically. The response will include <code>"pdf_type": "xfa_only"</code>.</li>
+            <li><strong>Password-protected</strong> — decrypt the PDF before filling. The response will include <code>"pdf_type": "encrypted"</code>.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          I get "None of the provided field names exist in this PDF" <span class="faq-arrow">▾</span>
+        </button>
+        <div class="faq-a">
+          <p>Your field names don't match what's in the PDF. Call <code>list_form_fields</code> to get the exact names. The response also includes a <code>valid_fields</code> list showing all available field names.</p>
+          <p style="margin-top:0.5rem">Common mistake: using display names like <code>"Name"</code> instead of the actual PDF field ID like <code>"f1_01[0]"</code>. Always use the names returned by <code>list_form_fields</code> exactly.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          My API key says "limit reached" — how do I upgrade? <span class="faq-arrow">▾</span>
+        </button>
+        <div class="faq-a">
+          <p>Free tier allows 50 fills per month. To upgrade to unlimited Pro, visit the <a href="#pricing">pricing section</a> and click "Start Pro". Your existing API key is automatically upgraded — no need to change your config.</p>
+          <p style="margin-top:0.5rem">Already a Pro subscriber? <a href="https://billing.stripe.com/p/login/aEU9BT6Oj1Wy6A8144" target="_blank">Manage your subscription</a>.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          The server crashes with "Read-only file system: ./logs" <span class="faq-arrow">▾</span>
+        </button>
+        <div class="faq-a">
+          <p>This happens when the server is launched from a read-only directory (common in Claude Desktop stdio mode). Set the <code>FORMFILL_LOG_FILE</code> environment variable to a writable path, or set <code>FORMFILL_DATA_DIR</code> to a writable directory.</p>
+          <p style="margin-top:0.5rem">The default log path is <code>~/Library/Logs/formfill-mcp/server.log</code> (macOS), which should work without any config.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          How do I check if the remote server is up? <span class="faq-arrow">▾</span>
+        </button>
+        <div class="faq-a">
+          <p>Hit the health endpoint: <code>GET https://formfill.plenitudo.ai/health</code> — returns <code>{"status": "ok"}</code> when running.</p>
+          <p style="margin-top:0.5rem">For a deeper check: <code>GET https://formfill.plenitudo.ai/smoke-test</code> — fills a real PDF end-to-end and reports pass/fail for each component.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <hr />
+
+  <!-- SUPPORT -->
+  <section id="support">
+    <h2>Support</h2>
+    <p class="section-sub">We're here to help. Pick the channel that fits your question.</p>
+    <div class="support-grid">
+      <div class="support-card">
+        <div class="icon">🐛</div>
+        <h3>Bug Reports</h3>
+        <p>Found a bug or unexpected behavior? Open an issue on GitHub with your PDF type and the error message.</p>
+        <a href="https://github.com/knportal/formfill-mcp/issues/new?template=bug_report.md" target="_blank">Open a GitHub Issue →</a>
+      </div>
+      <div class="support-card">
+        <div class="icon">💡</div>
+        <h3>Feature Requests</h3>
+        <p>Need signature fields, batch processing, or a new tool? Let us know what your workflow needs.</p>
+        <a href="https://github.com/knportal/formfill-mcp/issues/new?template=feature_request.md" target="_blank">Request a Feature →</a>
+      </div>
+      <div class="support-card">
+        <div class="icon">💳</div>
+        <h3>Billing & Subscriptions</h3>
+        <p>Manage your Pro subscription, update payment info, or cancel anytime from the Stripe portal.</p>
+        <a href="https://billing.stripe.com/p/login/aEU9BT6Oj1Wy6A8144" target="_blank">Manage Subscription →</a>
+      </div>
+      <div class="support-card">
+        <div class="icon">📖</div>
+        <h3>Documentation</h3>
+        <p>Full tool reference, configuration options, and example workflows on GitHub.</p>
+        <a href="https://github.com/knportal/formfill-mcp#readme" target="_blank">Read the Docs →</a>
       </div>
     </div>
   </section>
@@ -345,27 +436,114 @@
   <hr />
 
   <section id="get-key" style="text-align:center; padding: 5rem 2rem;">
-    <h2>Get your API key</h2>
+    <h2>Start filling forms today</h2>
     <p class="section-sub" style="margin-bottom:2rem;">Free tier — no credit card required, instant access.</p>
-    <a class="btn-primary" href="https://buy.stripe.com/14A5kC7sr5eE5aven318c00" target="_blank" style="display:inline-block; margin-bottom: 2.5rem;">Subscribe &amp; Get API Key</a>
+    <a class="btn-primary" href="#" onclick="openModal(); return false;" style="display:inline-block; margin-bottom: 2.5rem;">Get Free API Key</a>
     <div style="border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; max-width: 520px; margin: 0 auto; text-align:left;">
-      <p style="font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem;">MCP Endpoint</p>
-      <code style="font-family: var(--mono); font-size: 0.85rem; color: var(--accent-light); word-break: break-all;">https://formfill-mcp.plain-cherry-e1fe.workers.dev/mcp</code>
+      <p style="font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem;">Remote MCP Endpoint</p>
+      <code style="font-family: var(--mono); font-size: 0.85rem; color: var(--accent-light); word-break: break-all;">https://formfill.plenitudo.ai/mcp</code>
     </div>
   </section>
 
   <footer>
     <p>
       Built by <a href="https://plenitudo.ai" target="_blank">Plenitudo.ai</a> &nbsp;·&nbsp;
-      <a href="https://smithery.ai" target="_blank">Smithery</a> &nbsp;·&nbsp;
+      <a href="https://smithery.ai/server/@knportal/formfill-mcp" target="_blank">Smithery</a> &nbsp;·&nbsp;
       <a href="https://github.com/knportal/formfill-mcp" target="_blank">GitHub</a> &nbsp;·&nbsp;
-      <a href="https://billing.stripe.com/p/login/14A5kC7sr5eE5aven318c00" target="_blank">Manage Subscription</a>
+      <a href="https://github.com/knportal/formfill-mcp/issues" target="_blank">Support</a> &nbsp;·&nbsp;
+      <a href="https://billing.stripe.com/p/login/aEU9BT6Oj1Wy6A8144" target="_blank">Manage Subscription</a>
     </p>
     <p style="margin-top:0.5rem; font-size: 0.8rem;">© 2026 Plenitudo · FormFill MCP is not affiliated with Adobe, IRS, or any government body.</p>
   </footer>
 
-
 <script>
+  // --- Signup modal ---
+  function openModal() {
+    document.getElementById('signupModal').classList.add('open');
+    setTimeout(function() { document.getElementById('signupEmail').focus(); }, 100);
+  }
+  function closeModal() {
+    document.getElementById('signupModal').classList.remove('open');
+    document.getElementById('signupResult').style.display = 'none';
+    document.getElementById('signupResult').className = 'modal-result';
+    document.getElementById('signupEmail').value = '';
+    document.getElementById('signupBtn').disabled = false;
+    document.getElementById('signupBtn').textContent = 'Get Free Key';
+  }
+  document.getElementById('signupModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+  document.getElementById('signupEmail').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') submitSignup();
+  });
+
+  async function submitSignup() {
+    var email = document.getElementById('signupEmail').value.trim();
+    var btn = document.getElementById('signupBtn');
+    var result = document.getElementById('signupResult');
+    if (!email || !email.includes('@')) {
+      result.className = 'modal-result error';
+      result.textContent = 'Please enter a valid email address.';
+      result.style.display = 'block';
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Generating key…';
+    result.style.display = 'none';
+    try {
+      var resp = await fetch('https://formfill.plenitudo.ai/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email })
+      });
+      var data = await resp.json();
+      if (resp.ok && data.api_key) {
+        result.className = 'modal-result success';
+        result.innerHTML = '<strong>Your free API key:</strong><div class="key-display">' + data.api_key + '</div><p style="margin-top:0.5rem;color:var(--muted);font-size:0.82rem;">Copy this — it won\'t be shown again. Pass it as <code>api_key</code> in every tool call.</p>';
+        result.style.display = 'block';
+        btn.textContent = 'Key generated!';
+      } else {
+        throw new Error(data.error || 'Something went wrong. Please try again.');
+      }
+    } catch (err) {
+      result.className = 'modal-result error';
+      result.textContent = err.message || 'Network error. Please try again.';
+      result.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Get Free Key';
+    }
+  }
+
+  // --- Pro checkout ---
+  async function openProCheckout() {
+    var email = prompt('Enter your email for the Pro subscription:');
+    if (!email) return;
+    try {
+      var resp = await fetch('https://formfill.plenitudo.ai/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, api_key: '' })
+      });
+      var data = await resp.json();
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+      } else {
+        alert('Could not create checkout session. Please try again or contact support.');
+      }
+    } catch (err) {
+      alert('Network error. Please try again.');
+    }
+  }
+
+  // --- FAQ accordion ---
+  function toggleFaq(btn) {
+    var item = btn.closest('.faq-item');
+    var isOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(function(el) { el.classList.remove('open'); });
+    if (!isOpen) item.classList.add('open');
+  }
+
+  // --- UTM ref passthrough ---
   (function () {
     var ref = new URLSearchParams(window.location.search).get('ref');
     if (!ref) return;
