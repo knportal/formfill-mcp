@@ -884,8 +884,8 @@ if __name__ == "__main__":
 
             # 2. Auth DB readable
             try:
-                from auth import _DB as _auth_db
-                conn = _sqlite3.connect(_auth_db)
+                from config import KEYS_DB
+                conn = _sqlite3.connect(KEYS_DB)
                 conn.execute("SELECT COUNT(*) FROM api_keys").fetchone()
                 conn.close()
                 checks["auth_db"] = "ok"
