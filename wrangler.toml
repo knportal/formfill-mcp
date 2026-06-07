@@ -3,5 +3,10 @@ main = "worker.js"
 compatibility_date = "2024-01-01"
 
 routes = [
-  { pattern = "formfill.plenitudo.ai/mcp*", zone_name = "plenitudo.ai" }
+  { pattern = "formfill.plenitudo.ai/mcp*", zone_name = "plenitudo.ai" },
+  { pattern = "formfill.plenitudo.ai/api/*", zone_name = "plenitudo.ai" },
+  { pattern = "formfill.plenitudo.ai/health", zone_name = "plenitudo.ai" },
+  { pattern = "formfill.plenitudo.ai/smoke-test", zone_name = "plenitudo.ai" },
+  { pattern = "formfill.plenitudo.ai/webhook/*", zone_name = "plenitudo.ai" },
+  { pattern = "formfill.plenitudo.ai/stripe-webhook", zone_name = "plenitudo.ai" }
 ]
