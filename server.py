@@ -291,6 +291,28 @@ def list_form_fields(
                 ),
             })
 
+        # Build name→position map from widget annotations so Claude can
+        # identify fields by their visual location on the page.
+        widget_positions: dict[str, dict] = {}
+        for page_num, page in enumerate(reader.pages):
+            annots = page.get("/Annots")
+            if not annots:
+                continue
+            for annot_ref in annots:
+                annot = annot_ref.get_object()
+                if annot.get("/Subtype") != "/Widget":
+                    continue
+                t = annot.get("/T")
+                if not t:
+                    continue
+                rect = annot.get("/Rect")
+                if rect:
+                    widget_positions[str(t)] = {
+                        "page": page_num + 1,
+                        "x": round(float(rect[0])),
+                        "y": round(float(rect[1])),
+                    }
+
         field_info = {}
         for name, field in fields.items():
             raw_type = str(field.get("/FT", "unknown"))
@@ -300,10 +322,14 @@ def list_form_fields(
                 "/Ch": "choice/dropdown",
                 "/Sig": "signature",
             }
-            field_info[name] = {
+            entry: dict = {
                 "type": type_map.get(raw_type, raw_type),
                 "current_value": str(field.get("/V", "")),
             }
+            leaf = name.split(".")[-1] if "." in name else name
+            if leaf in widget_positions:
+                entry["position"] = widget_positions[leaf]
+            field_info[name] = entry
 
         logger.info("list_form_fields: %s — %d fields", src.name, len(field_info))
         _log_call("list_form_fields", bool(payment_proof), 0.0, True, int((_time.monotonic() - _t0) * 1000))
