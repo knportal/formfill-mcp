@@ -1248,6 +1248,53 @@ if __name__ == "__main__":
                 "total_fills": usage["total_fills"],
             })
 
+        # GET /api/billing?api_key=ff_... — redirect to Stripe customer portal
+        # ---------------------------------------------------------------------------
+        async def api_billing(request: Request):
+            import stripe as _stripe
+            from config import STRIPE_SECRET_KEY
+            from starlette.responses import RedirectResponse
+
+            if not STRIPE_SECRET_KEY:
+                return JSONResponse({"error": "Stripe not configured"}, status_code=503)
+
+            api_key = (request.query_params.get("api_key") or "").strip()
+            if not api_key:
+                return JSONResponse({"error": "api_key query parameter is required"}, status_code=400)
+
+            # Look up the Stripe customer ID for this key
+            try:
+                conn = _sqlite3.connect(KEYS_DB)
+                conn.row_factory = _sqlite3.Row
+                row = conn.execute(
+                    "SELECT stripe_customer_id FROM api_keys WHERE key = ? AND active = 1",
+                    (api_key,)
+                ).fetchone()
+                conn.close()
+            except Exception as exc:
+                return JSONResponse({"error": f"Database error: {exc}"}, status_code=500)
+
+            if row is None:
+                return JSONResponse({"error": "API key not found or inactive"}, status_code=404)
+
+            stripe_customer_id = row["stripe_customer_id"] if row["stripe_customer_id"] else None
+
+            if not stripe_customer_id:
+                return JSONResponse({
+                    "error": "No subscription found for this API key. Upgrade at https://formfill.plenitudo.ai"
+                }, status_code=404)
+
+            try:
+                _stripe.api_key = STRIPE_SECRET_KEY
+                session = _stripe.billing_portal.Session.create(
+                    customer=stripe_customer_id,
+                    return_url="https://formfill.plenitudo.ai",
+                )
+                return RedirectResponse(url=session.url, status_code=303)
+            except Exception as exc:
+                logger.error("Billing portal session failed: %s", exc)
+                return JSONResponse({"error": "Failed to create billing session"}, status_code=500)
+
         # Wrap FastMCP ASGI app with a /health endpoint Railway can check.
         # The inner MCP app has its own lifespan (starts the session manager task
         # group). Starlette doesn't propagate sub-app lifespans, so we drive it
@@ -1272,6 +1319,7 @@ if __name__ == "__main__":
                 Route("/api/signup", api_signup, methods=["POST"]),
                 Route("/api/checkout", api_checkout, methods=["POST"]),
                 Route("/api/key-info", api_key_info, methods=["GET"]),
+                Route("/api/billing", api_billing, methods=["GET"]),
                 Mount("/", app=mcp_asgi),
             ],
         )

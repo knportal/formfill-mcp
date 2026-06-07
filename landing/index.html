@@ -372,7 +372,7 @@
         </button>
         <div class="faq-a">
           <p>Free tier allows 50 fills per month. To upgrade to unlimited Pro, visit the <a href="#pricing">pricing section</a> and click "Start Pro". Your existing API key is automatically upgraded — no need to change your config.</p>
-          <p style="margin-top:0.5rem">Already a Pro subscriber? <a href="https://billing.stripe.com/p/login/aEU9BT6Oj1Wy6A8144" target="_blank">Manage your subscription</a>.</p>
+          <p style="margin-top:0.5rem">Already a Pro subscriber? <a href="#" onclick="openBillingPortal(); return false;">Manage your subscription</a>.</p>
         </div>
       </div>
 
@@ -432,7 +432,7 @@
         <div class="icon">💳</div>
         <h3>Billing & Subscriptions</h3>
         <p>Manage your Pro subscription, update payment info, or cancel anytime from the Stripe portal.</p>
-        <a href="https://billing.stripe.com/p/login/aEU9BT6Oj1Wy6A8144" target="_blank">Manage Subscription →</a>
+        <a href="#" onclick="openBillingPortal(); return false;">Manage Subscription →</a>
       </div>
       <div class="support-card">
         <div class="icon">📖</div>
@@ -462,7 +462,7 @@
       <a href="https://smithery.ai/server/@knportal/formfill-mcp" target="_blank">Smithery</a> &nbsp;·&nbsp;
       <a href="https://github.com/knportal/formfill-mcp" target="_blank">GitHub</a> &nbsp;·&nbsp;
       <a href="https://github.com/knportal/formfill-mcp/issues" target="_blank">Support</a> &nbsp;·&nbsp;
-      <a href="https://billing.stripe.com/p/login/aEU9BT6Oj1Wy6A8144" target="_blank">Manage Subscription</a>
+      <a href="#" onclick="openBillingPortal(); return false;">Manage Subscription</a>
     </p>
     <p style="margin-top:0.5rem; font-size: 0.8rem;">© 2026 Plenitudo · FormFill MCP is not affiliated with Adobe, IRS, or any government body.</p>
   </footer>
@@ -552,6 +552,18 @@
     var isOpen = item.classList.contains('open');
     document.querySelectorAll('.faq-item.open').forEach(function(el) { el.classList.remove('open'); });
     if (!isOpen) item.classList.add('open');
+  }
+
+  // --- Billing portal ---
+  function openBillingPortal() {
+    var key = prompt('Enter your FormFill API key to access your billing portal:');
+    if (!key) return;
+    key = key.trim();
+    if (!key.startsWith('ff_')) {
+      alert('That doesn\'t look like a FormFill API key (should start with ff_). Check your key and try again.');
+      return;
+    }
+    window.location.href = 'https://formfill.plenitudo.ai/api/billing?api_key=' + encodeURIComponent(key);
   }
 
   // --- UTM ref passthrough ---
