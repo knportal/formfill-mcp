@@ -226,6 +226,60 @@ def _get_reader_fields(reader: "PdfReader") -> dict:
     return fields if fields else {}
 
 
+def _pdf_compat_info(reader: "PdfReader") -> dict:
+    """Return PDF compatibility metadata: type, XFA presence, encryption.
+
+    pdf_type values:
+      "acroform"           — standard fillable PDF (fully supported)
+      "hybrid_xfa_acroform"— IRS/government forms; filled via AcroForm but
+                             visual rendering depends on viewer XFA support
+      "xfa_only"           — XFA-only; cannot be filled programmatically
+      "flat"               — no form fields at all
+
+    Callers should surface xfa_note and any warnings to the user.
+    """
+    info: dict = {}
+
+    if reader.is_encrypted:
+        info["encrypted"] = True
+        info["warning"] = (
+            "PDF is password-protected. Decrypt it first before filling."
+        )
+        info["pdf_type"] = "encrypted"
+        return info
+
+    try:
+        catalog = reader.trailer["/Root"].get_object()
+        acroform_obj = catalog.get("/AcroForm")
+        if acroform_obj is None:
+            info["pdf_type"] = "flat"
+            return info
+        acroform = acroform_obj.get_object()
+        xfa = acroform.get("/XFA")
+        has_acroform_fields = bool(acroform.get("/Fields"))
+        if xfa and has_acroform_fields:
+            info["pdf_type"] = "hybrid_xfa_acroform"
+            info["xfa_note"] = (
+                "This PDF uses both XFA and AcroForm (common in IRS/government forms). "
+                "Fields are filled via AcroForm. Always use the exact field names AND "
+                "position coordinates returned by list_form_fields — field names like "
+                "f1_07[0] give no visual hint; the position (x, y) tells you where the "
+                "field actually appears on the page."
+            )
+        elif xfa:
+            info["pdf_type"] = "xfa_only"
+            info["xfa_note"] = (
+                "This PDF uses XFA only and cannot be filled programmatically. "
+                "Open it in Adobe Acrobat or a compatible viewer."
+            )
+        else:
+            info["pdf_type"] = "acroform"
+    except Exception:
+        info["pdf_type"] = "unknown"
+
+    return info
+
+
 def _validate_fields(
     requested: dict, available: dict
 ) -> tuple[dict, list[str]]:
@@ -250,7 +304,13 @@ def list_form_fields(
     api_key: Annotated[str | None, Field(description="Your FormFill API key (get one at formfill.plenitudo.ai).")] = None,
     payment_proof: Annotated[str | None, Field(description="x402 payment proof (tx hash). Alternative to api_key for pay-per-use.")] = None,
 ) -> str:
-    """Inspect a PDF and return every fillable field name, type, and current value. Use this before fill_form to discover available fields."""
+    """Inspect a PDF and return every fillable field: name, type, current value, and x/y position on the page.
+
+    ALWAYS call this before fill_form. Use the exact field names returned here — never guess.
+    Use the position coordinates (x, y) to identify what each field represents visually:
+    higher y = higher on the page in PDF coordinates. Fields with similar y values are on
+    the same horizontal line; fields with similar x values are in the same column.
+    The response also includes pdf_type so you know if the PDF may have rendering quirks."""
     _stats["total_calls"] += 1
     _track_tool("list_form_fields")
     _t0 = _time.monotonic()
@@ -278,12 +338,23 @@ def list_form_fields(
 
     try:
         reader = PdfReader(str(src))
+        compat = _pdf_compat_info(reader)
+
+        if compat.get("pdf_type") == "encrypted":
+            _log_call("list_form_fields", bool(payment_proof), 0.0, False, int((_time.monotonic() - _t0) * 1000))
+            return json.dumps({"ok": False, **compat})
+
+        if compat.get("pdf_type") == "xfa_only":
+            _log_call("list_form_fields", bool(payment_proof), 0.0, False, int((_time.monotonic() - _t0) * 1000))
+            return json.dumps({"ok": False, **compat})
+
         fields = _get_reader_fields(reader)
 
         if not fields:
             _log_call("list_form_fields", bool(payment_proof), 0.0, False, int((_time.monotonic() - _t0) * 1000))
             return json.dumps({
                 "ok": False,
+                "pdf_type": compat.get("pdf_type", "flat"),
                 "error": "No fillable fields found in this PDF.",
                 "note": (
                     "The PDF may be flat/scanned rather than an interactive form. "
@@ -331,12 +402,17 @@ def list_form_fields(
                 entry["position"] = widget_positions[leaf]
             field_info[name] = entry
 
-        logger.info("list_form_fields: %s — %d fields", src.name, len(field_info))
+        logger.info("list_form_fields: %s — %d fields (%s)", src.name, len(field_info), compat.get("pdf_type"))
         _log_call("list_form_fields", bool(payment_proof), 0.0, True, int((_time.monotonic() - _t0) * 1000))
-        return json.dumps(
-            {"ok": True, "field_count": len(field_info), "fields": field_info},
-            indent=2,
-        )
+        response: dict = {
+            "ok": True,
+            "pdf_type": compat.get("pdf_type", "acroform"),
+            "field_count": len(field_info),
+            "fields": field_info,
+        }
+        if "xfa_note" in compat:
+            response["xfa_note"] = compat["xfa_note"]
+        return json.dumps(response, indent=2)
 
     except Exception as exc:
         logger.exception("list_form_fields failed for %s", pdf_path)
@@ -398,7 +474,16 @@ def fill_form(
     api_key: Annotated[str | None, Field(description="Your FormFill API key (get one at formfill.plenitudo.ai).")] = None,
     payment_proof: Annotated[str | None, Field(description="x402 payment proof (tx hash). Alternative to api_key for pay-per-use.")] = None,
 ) -> str:
-    """Fill a PDF form with the given field values and save the result to disk. Use for standard single-page or short forms (under 5 pages)."""
+    """Fill a PDF form with the given field values and save the result to disk.
+
+    WORKFLOW: 1) Call list_form_fields first to get exact field names and their x/y positions.
+    2) Use position coordinates to confirm which field is which — higher y = higher on page.
+    3) Pass exact field names from list_form_fields here. Never guess field names.
+
+    Use for single-page or short forms (under 5 pages). Use fill_form_multipage for longer forms.
+
+    Returns ok:false with unknown_fields if ALL provided field names are invalid.
+    Returns ok:true with a warnings.unknown_fields list if SOME names are invalid (partial fill)."""
     _stats["total_calls"] += 1
     _track_tool("fill_form")
     _t0 = _time.monotonic()
@@ -426,10 +511,34 @@ def fill_form(
 
     try:
         reader = PdfReader(str(src))
+        compat = _pdf_compat_info(reader)
+
+        if compat.get("pdf_type") in ("encrypted", "xfa_only"):
+            _log_call("fill_form", _paid, _amount, False, int((_time.monotonic() - _t0) * 1000))
+            return json.dumps({"ok": False, **compat})
+
         available_fields = _get_reader_fields(reader)
+
+        if not available_fields:
+            _log_call("fill_form", _paid, _amount, False, int((_time.monotonic() - _t0) * 1000))
+            return json.dumps({
+                "ok": False,
+                "pdf_type": compat.get("pdf_type", "flat"),
+                "error": "No fillable fields found in this PDF.",
+            })
 
         # Validate requested field names
         valid_values, invalid_names = _validate_fields(field_values, available_fields)
+
+        # Fail hard if every field name is wrong — likely using wrong names
+        if invalid_names and not valid_values:
+            _log_call("fill_form", _paid, _amount, False, int((_time.monotonic() - _t0) * 1000))
+            return json.dumps({
+                "ok": False,
+                "error": "None of the provided field names exist in this PDF. Call list_form_fields to get the correct names.",
+                "unknown_fields": invalid_names,
+                "valid_fields": list(available_fields.keys()),
+            })
 
         if invalid_names:
             logger.warning(
@@ -444,14 +553,15 @@ def fill_form(
 
         # Apply fields across all pages
         for page in writer.pages:
-            writer.update_page_form_field_values(page, field_values)
+            writer.update_page_form_field_values(page, field_values, auto_regenerate=False)
 
         with open(str(dst), "wb") as fh:
             writer.write(fh)
 
-        result = {
+        result: dict = {
             "ok": True,
             "output_path": str(dst),
+            "pdf_type": compat.get("pdf_type", "acroform"),
             "fields_filled": len(valid_values),
             "pages": len(reader.pages),
             "message": f"Filled PDF saved to {dst}",
@@ -459,14 +569,18 @@ def fill_form(
         if invalid_names:
             result["warnings"] = {
                 "unknown_fields": invalid_names,
+                "hint": "Call list_form_fields to get correct field names and their positions.",
                 "valid_fields": list(available_fields.keys()),
             }
+        if "xfa_note" in compat:
+            result["xfa_note"] = compat["xfa_note"]
 
         logger.info(
-            "fill_form: %s → %s (%d fields, %d pages)",
+            "fill_form: %s → %s (%d/%d fields, %d pages)",
             src.name,
             dst.name,
             len(valid_values),
+            len(field_values),
             len(reader.pages),
         )
         _log_call("fill_form", _paid, _amount, True, int((_time.monotonic() - _t0) * 1000))
@@ -490,7 +604,17 @@ def fill_form_multipage(
     api_key: Annotated[str | None, Field(description="Your FormFill API key (get one at formfill.plenitudo.ai).")] = None,
     payment_proof: Annotated[str | None, Field(description="x402 payment proof (tx hash). Alternative to api_key for pay-per-use.")] = None,
 ) -> str:
-    """Fill a multi-page PDF form, iterating page-by-page for reliability. Use when the PDF has more than 5 pages or fields spanning multiple pages (e.g. rental applications, tax packets, multi-section HR forms). Prefer this tool over fill_form for any complex or long document."""
+    """Fill a multi-page PDF form, iterating page-by-page for reliability.
+
+    WORKFLOW: 1) Call list_form_fields first to get exact field names and their x/y positions.
+    2) Use position coordinates to confirm which field is which — higher y = higher on page.
+    3) Pass exact field names from list_form_fields here. Never guess field names.
+
+    Use when the PDF has more than 5 pages or fields spanning multiple pages (rental applications,
+    tax packets, multi-section HR forms). Prefer this over fill_form for any complex/long document.
+
+    Returns ok:false with unknown_fields if ALL provided field names are invalid.
+    Returns ok:true with a warnings.unknown_fields list if SOME names are invalid (partial fill)."""
     _stats["total_calls"] += 1
     _track_tool("fill_form_multipage")
     _t0 = _time.monotonic()
@@ -518,24 +642,56 @@ def fill_form_multipage(
 
     try:
         reader = PdfReader(str(src))
+        compat = _pdf_compat_info(reader)
+
+        if compat.get("pdf_type") in ("encrypted", "xfa_only"):
+            _log_call("fill_form_multipage", _paid, _amount, False, int((_time.monotonic() - _t0) * 1000))
+            return json.dumps({"ok": False, **compat})
+
         available_fields = _get_reader_fields(reader)
 
+        if not available_fields:
+            _log_call("fill_form_multipage", _paid, _amount, False, int((_time.monotonic() - _t0) * 1000))
+            return json.dumps({
+                "ok": False,
+                "pdf_type": compat.get("pdf_type", "flat"),
+                "error": "No fillable fields found in this PDF.",
+            })
+
         valid_values, invalid_names = _validate_fields(field_values, available_fields)
+
+        if invalid_names and not valid_values:
+            _log_call("fill_form_multipage", _paid, _amount, False, int((_time.monotonic() - _t0) * 1000))
+            return json.dumps({
+                "ok": False,
+                "error": "None of the provided field names exist in this PDF. Call list_form_fields to get the correct names.",
+                "unknown_fields": invalid_names,
+                "valid_fields": list(available_fields.keys()),
+            })
+
+        if invalid_names:
+            logger.warning(
+                "fill_form_multipage: %d unknown field(s) for %s: %s",
+                len(invalid_names),
+                src.name,
+                invalid_names,
+            )
 
         writer = PdfWriter()
         writer.append(reader)
 
         pages_updated = []
         for i, page in enumerate(writer.pages):
-            writer.update_page_form_field_values(page, field_values)
+            writer.update_page_form_field_values(page, field_values, auto_regenerate=False)
             pages_updated.append(i + 1)
 
         with open(str(dst), "wb") as fh:
             writer.write(fh)
 
-        result = {
+        result: dict = {
             "ok": True,
             "output_path": str(dst),
+            "pdf_type": compat.get("pdf_type", "acroform"),
             "fields_filled": len(valid_values),
             "total_pages": len(reader.pages),
             "pages_updated": pages_updated,
@@ -544,14 +700,18 @@ def fill_form_multipage(
         if invalid_names:
             result["warnings"] = {
                 "unknown_fields": invalid_names,
+                "hint": "Call list_form_fields to get correct field names and their positions.",
                 "valid_fields": list(available_fields.keys()),
             }
+        if "xfa_note" in compat:
+            result["xfa_note"] = compat["xfa_note"]
 
         logger.info(
-            "fill_form_multipage: %s → %s (%d fields, %d pages)",
+            "fill_form_multipage: %s → %s (%d/%d fields, %d pages)",
             src.name,
             dst.name,
             len(valid_values),
+            len(field_values),
             len(reader.pages),
         )
         _log_call("fill_form_multipage", _paid, _amount, True, int((_time.monotonic() - _t0) * 1000))
@@ -707,6 +867,86 @@ if __name__ == "__main__":
 
         async def health(request: Request):
             return JSONResponse({"status": "ok", "service": "formfill-mcp"})
+
+        async def smoke_test(request: Request):
+            """GET /smoke-test — fills a minimal in-memory PDF and verifies the result.
+            Returns {"ok": true, "checks": {...}} or {"ok": false, "failed": [...]}."""
+            import base64, io, time as _t
+            checks: dict = {}
+            failed: list = []
+
+            # 1. pypdf available
+            if _PYPDF_OK:
+                checks["pypdf"] = "ok"
+            else:
+                checks["pypdf"] = "missing"
+                failed.append("pypdf not installed")
+
+            # 2. Auth DB readable
+            try:
+                from auth import _DB as _auth_db
+                conn = _sqlite3.connect(_auth_db)
+                conn.execute("SELECT COUNT(*) FROM api_keys").fetchone()
+                conn.close()
+                checks["auth_db"] = "ok"
+            except Exception as exc:
+                checks["auth_db"] = str(exc)
+                failed.append(f"auth_db: {exc}")
+
+            # 3. Analytics DB readable
+            try:
+                conn = _sqlite3.connect(_ANALYTICS_DB)
+                conn.execute("SELECT COUNT(*) FROM tool_calls").fetchone()
+                conn.close()
+                checks["analytics_db"] = "ok"
+            except Exception as exc:
+                checks["analytics_db"] = str(exc)
+                failed.append(f"analytics_db: {exc}")
+
+            # 4. Fill a minimal in-memory AcroForm PDF and read it back
+            if _PYPDF_OK:
+                try:
+                    _MINIMAL_PDF_B64 = (
+                        "JVBERi0xLjMKJeLjz9MKMSAwIG9iago8PAovUHJvZHVjZXIgKHB5cGRmKQo+PgplbmRvYmoKMiAw"
+                        "IG9iago8PAovVHlwZSAvUGFnZXMKL0NvdW50IDEKL0tpZHMgWyA0IDAgUiBdCj4+CmVuZG9iagoz"
+                        "IDAgb2JqCjw8Ci9UeXBlIC9DYXRhbG9nCi9QYWdlcyAyIDAgUgovQWNyb0Zvcm0gPDwKL0ZpZWxk"
+                        "cyBbIDUgMCBSIF0KPj4KPj4KZW5kb2JqCjQgMCBvYmoKPDwKL1R5cGUgL1BhZ2UKL1Jlc291cmNl"
+                        "cyA8PAo+PgovTWVkaWFCb3ggWyAwLjAgMC4wIDYxMiA3OTIgXQovUGFyZW50IDIgMCBSCi9Bbm5v"
+                        "dHMgWyA1IDAgUiBdCj4+CmVuZG9iago1IDAgb2JqCjw8Ci9UeXBlIC9Bbm5vdAovU3VidHlwZSAv"
+                        "V2lkZ2V0Ci9GVCAvVHgKL1QgKHRlc3RcMTM3bmFtZSkKL1JlY3QgWyA3MiA3MDAgMzAwIDcyMCBd"
+                        "Ci9WICgpCi9EQSAoXDA1N0hlbHYgMTIgVGYgMCBnKQo+PgplbmRvYmoKeHJlZgowIDYKMDAwMDAw"
+                        "MDAwMCA2NTUzNSBmIAowMDAwMDAwMDE1IDAwMDAwIG4gCjAwMDAwMDAwNTQgMDAwMDAgbiAKMDAwMDAw"
+                        "MDExMyAwMDAwMCBuIAowMDAwMDAwMTk2IDAwMDAwIG4gCjAwMDAwMDAzMDggMDAwMDAgbiAKdHJhaWxl"
+                        "cgo8PAovU2l6ZSA2Ci9Sb290IDMgMCBSCi9JbmZvIDEgMCBSCj4+CnN0YXJ0eHJlZgo0NDEKJSVF"
+                        "T0YK"
+                    )
+                    pdf_bytes = base64.b64decode(_MINIMAL_PDF_B64)
+                    reader = PdfReader(io.BytesIO(pdf_bytes))
+                    fields = reader.get_fields() or {}
+                    if "test_name" not in fields:
+                        raise ValueError(f"Expected test_name field, got: {list(fields.keys())}")
+                    writer = PdfWriter()
+                    writer.append(reader)
+                    writer.update_page_form_field_values(
+                        writer.pages[0], {"test_name": "smoke_ok"}, auto_regenerate=False
+                    )
+                    buf = io.BytesIO()
+                    writer.write(buf)
+                    reader2 = PdfReader(io.BytesIO(buf.getvalue()))
+                    filled = reader2.get_fields() or {}
+                    val = str(filled.get("test_name", {}).get("/V", ""))
+                    if val != "smoke_ok":
+                        raise ValueError(f"Fill verification failed: got '{val}'")
+                    checks["pdf_fill"] = "ok"
+                except Exception as exc:
+                    checks["pdf_fill"] = str(exc)
+                    failed.append(f"pdf_fill: {exc}")
+
+            status = 200 if not failed else 500
+            return JSONResponse(
+                {"ok": not failed, "checks": checks, "failed": failed},
+                status_code=status,
+            )
 
         async def analytics_endpoint(request: Request):
             """
@@ -1023,6 +1263,7 @@ if __name__ == "__main__":
             lifespan=lifespan,
             routes=[
                 Route("/health", health),
+                Route("/smoke-test", smoke_test),
                 Route("/analytics", analytics_endpoint),
                 Route("/stats", stats_endpoint),
                 Route("/payments", payments),
