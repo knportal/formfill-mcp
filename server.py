@@ -1268,7 +1268,7 @@ if __name__ == "__main__":
                 conn = _sqlite3.connect(KEYS_DB)
                 conn.row_factory = _sqlite3.Row
                 row = conn.execute(
-                    "SELECT stripe_customer_id FROM api_keys WHERE key = ? AND active = 1",
+                    "SELECT stripe_customer FROM api_keys WHERE key = ? AND active = 1",
                     (api_key,)
                 ).fetchone()
                 conn.close()
@@ -1278,7 +1278,7 @@ if __name__ == "__main__":
             if row is None:
                 return JSONResponse({"error": "API key not found or inactive"}, status_code=404)
 
-            stripe_customer_id = row["stripe_customer_id"] if row["stripe_customer_id"] else None
+            stripe_customer_id = row["stripe_customer"] if row["stripe_customer"] else None
 
             if not stripe_customer_id:
                 return JSONResponse({
