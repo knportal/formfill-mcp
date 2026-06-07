@@ -167,6 +167,46 @@ def _auth_error(msg: str) -> str:
     return json.dumps({"error": msg, "ok": False})
 
 
+def _authenticate(
+    api_key: str | None,
+    payment_proof: str | None,
+    tool_name: str,
+) -> tuple[bool, str | None, bool, float]:
+    """Validate auth for a tool call.
+
+    Returns (authorized, error_json, paid, amount_usdc).
+    If authorized is False, return error_json immediately to the caller.
+    """
+    if api_key:
+        ok, err = validate_and_charge(api_key)
+        if not ok:
+            return False, _auth_error(err), False, 0.0
+        return True, None, False, 0.0
+    elif payment_proof:
+        if is_proof_used(payment_proof):
+            return False, json.dumps({"ok": False, "error": "Payment proof already used"}), False, 0.0
+        ok, err = verify_payment(payment_proof, PRICE_USDC, WALLET_ADDRESS)
+        if not ok:
+            return False, json.dumps({"ok": False, "error": f"Payment verification failed: {err}"}), False, 0.0
+        mark_proof_used(payment_proof, tool_name)
+        return True, None, True, PRICE_USDC
+    else:
+        return False, json.dumps(payment_required_response(tool_name)), False, 0.0
+
+
+def _check_admin(request) -> bool:
+    """Return True if the request carries a valid admin secret.
+
+    Checks Authorization: Bearer <ADMIN_SECRET>.
+    If ADMIN_SECRET is not configured, all requests are allowed.
+    """
+    from config import ADMIN_SECRET
+    if not ADMIN_SECRET:
+        return True
+    auth = request.headers.get("Authorization", "")
+    return auth == f"Bearer {ADMIN_SECRET}"
+
+
 def _resolve(pdf_path: str) -> tuple[Path | None, str | None]:
     """Expand and validate a PDF path. Returns (path, None) or (None, error)."""
     try:
@@ -336,28 +376,10 @@ def fill_form(
     _stats["total_calls"] += 1
     _track_tool("fill_form")
     _t0 = _time.monotonic()
-    _paid = False
-    _amount = 0.0
-    # Auth: accept either API key OR x402 payment proof
-    if api_key:
-        ok, err = validate_and_charge(api_key)
-        if not ok:
-            _log_call("fill_form", False, 0.0, False, int((_time.monotonic() - _t0) * 1000))
-            return _auth_error(err)
-    elif payment_proof:
-        if is_proof_used(payment_proof):
-            _log_call("fill_form", False, 0.0, False, int((_time.monotonic() - _t0) * 1000))
-            return json.dumps({"ok": False, "error": "Payment proof already used"})
-        ok, err = verify_payment(payment_proof, PRICE_USDC, WALLET_ADDRESS)
-        if not ok:
-            _log_call("fill_form", False, 0.0, False, int((_time.monotonic() - _t0) * 1000))
-            return json.dumps({"ok": False, "error": f"Payment verification failed: {err}"})
-        mark_proof_used(payment_proof, "fill_form")
-        _paid = True
-        _amount = PRICE_USDC
-    else:
+    _auth_ok, _auth_err, _paid, _amount = _authenticate(api_key, payment_proof, "fill_form")
+    if not _auth_ok:
         _log_call("fill_form", False, 0.0, False, int((_time.monotonic() - _t0) * 1000))
-        return json.dumps(payment_required_response("fill_form"))
+        return _auth_err
 
     if not _PYPDF_OK:
         _log_call("fill_form", _paid, _amount, False, int((_time.monotonic() - _t0) * 1000))
@@ -446,28 +468,10 @@ def fill_form_multipage(
     _stats["total_calls"] += 1
     _track_tool("fill_form_multipage")
     _t0 = _time.monotonic()
-    _paid = False
-    _amount = 0.0
-    # Auth: accept either API key OR x402 payment proof
-    if api_key:
-        ok, err = validate_and_charge(api_key)
-        if not ok:
-            _log_call("fill_form_multipage", False, 0.0, False, int((_time.monotonic() - _t0) * 1000))
-            return _auth_error(err)
-    elif payment_proof:
-        if is_proof_used(payment_proof):
-            _log_call("fill_form_multipage", False, 0.0, False, int((_time.monotonic() - _t0) * 1000))
-            return json.dumps({"ok": False, "error": "Payment proof already used"})
-        ok, err = verify_payment(payment_proof, PRICE_USDC, WALLET_ADDRESS)
-        if not ok:
-            _log_call("fill_form_multipage", False, 0.0, False, int((_time.monotonic() - _t0) * 1000))
-            return json.dumps({"ok": False, "error": f"Payment verification failed: {err}"})
-        mark_proof_used(payment_proof, "fill_form_multipage")
-        _paid = True
-        _amount = PRICE_USDC
-    else:
+    _auth_ok, _auth_err, _paid, _amount = _authenticate(api_key, payment_proof, "fill_form_multipage")
+    if not _auth_ok:
         _log_call("fill_form_multipage", False, 0.0, False, int((_time.monotonic() - _t0) * 1000))
-        return json.dumps(payment_required_response("fill_form_multipage"))
+        return _auth_err
 
     if not _PYPDF_OK:
         _log_call("fill_form_multipage", _paid, _amount, False, int((_time.monotonic() - _t0) * 1000))
@@ -549,28 +553,10 @@ def extract_form_data(
     _stats["total_calls"] += 1
     _track_tool("extract_form_data")
     _t0 = _time.monotonic()
-    _paid = False
-    _amount = 0.0
-    # Auth: accept either API key OR x402 payment proof
-    if api_key:
-        ok, err = validate_and_charge(api_key)
-        if not ok:
-            _log_call("extract_form_data", False, 0.0, False, int((_time.monotonic() - _t0) * 1000))
-            return _auth_error(err)
-    elif payment_proof:
-        if is_proof_used(payment_proof):
-            _log_call("extract_form_data", False, 0.0, False, int((_time.monotonic() - _t0) * 1000))
-            return json.dumps({"ok": False, "error": "Payment proof already used"})
-        ok, err = verify_payment(payment_proof, PRICE_USDC, WALLET_ADDRESS)
-        if not ok:
-            _log_call("extract_form_data", False, 0.0, False, int((_time.monotonic() - _t0) * 1000))
-            return json.dumps({"ok": False, "error": f"Payment verification failed: {err}"})
-        mark_proof_used(payment_proof, "extract_form_data")
-        _paid = True
-        _amount = PRICE_USDC
-    else:
+    _auth_ok, _auth_err, _paid, _amount = _authenticate(api_key, payment_proof, "extract_form_data")
+    if not _auth_ok:
         _log_call("extract_form_data", False, 0.0, False, int((_time.monotonic() - _t0) * 1000))
-        return json.dumps(payment_required_response("extract_form_data"))
+        return _auth_err
 
     if not _PYPDF_OK:
         _log_call("extract_form_data", _paid, _amount, False, int((_time.monotonic() - _t0) * 1000))
@@ -627,28 +613,10 @@ def flatten_form(
     _stats["total_calls"] += 1
     _track_tool("flatten_form")
     _t0 = _time.monotonic()
-    _paid = False
-    _amount = 0.0
-    # Auth: accept either API key OR x402 payment proof
-    if api_key:
-        ok, err = validate_and_charge(api_key)
-        if not ok:
-            _log_call("flatten_form", False, 0.0, False, int((_time.monotonic() - _t0) * 1000))
-            return _auth_error(err)
-    elif payment_proof:
-        if is_proof_used(payment_proof):
-            _log_call("flatten_form", False, 0.0, False, int((_time.monotonic() - _t0) * 1000))
-            return json.dumps({"ok": False, "error": "Payment proof already used"})
-        ok, err = verify_payment(payment_proof, PRICE_USDC, WALLET_ADDRESS)
-        if not ok:
-            _log_call("flatten_form", False, 0.0, False, int((_time.monotonic() - _t0) * 1000))
-            return json.dumps({"ok": False, "error": f"Payment verification failed: {err}"})
-        mark_proof_used(payment_proof, "flatten_form")
-        _paid = True
-        _amount = PRICE_USDC
-    else:
+    _auth_ok, _auth_err, _paid, _amount = _authenticate(api_key, payment_proof, "flatten_form")
+    if not _auth_ok:
         _log_call("flatten_form", False, 0.0, False, int((_time.monotonic() - _t0) * 1000))
-        return json.dumps(payment_required_response("flatten_form"))
+        return _auth_err
 
     if not _PYPDF_OK:
         _log_call("flatten_form", _paid, _amount, False, int((_time.monotonic() - _t0) * 1000))
@@ -721,6 +689,8 @@ if __name__ == "__main__":
               total_calls, paid_calls, total_revenue_usdc,
               calls_by_tool, avg_latency_ms, last_24h_calls
             """
+            if not _check_admin(request):
+                return JSONResponse({"error": "Unauthorized"}, status_code=401)
             try:
                 conn = _sqlite3.connect(_ANALYTICS_DB)
                 conn.row_factory = _sqlite3.Row
@@ -767,6 +737,8 @@ if __name__ == "__main__":
 
         async def stats_endpoint(request: Request):
             """Full /stats endpoint for analytics dashboard."""
+            if not _check_admin(request):
+                return JSONResponse({"error": "Unauthorized"}, status_code=401)
             import sqlite3 as _sqlite3
             from datetime import datetime as _dt, timedelta as _td, timezone as _tz
             from x402 import _PROOF_DB
@@ -842,6 +814,8 @@ if __name__ == "__main__":
             })
 
         async def payments(request: Request):
+            if not _check_admin(request):
+                return JSONResponse({"error": "Unauthorized"}, status_code=401)
             try:
                 import sqlite3 as _sqlite3
                 from x402 import _PROOF_DB

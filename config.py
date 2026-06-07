@@ -31,3 +31,8 @@ LOG_FILE = os.path.expanduser(
 
 # Upgrade URL surfaced in error messages
 UPGRADE_URL = os.getenv("UPGRADE_URL", "https://formfill.plenitudo.ai")
+
+# Admin secret for internal endpoints (/analytics, /stats, /payments)
+# Set this env var to require Bearer token auth on those routes.
+# If unset, the endpoints remain open (backwards compatible).
+ADMIN_SECRET = os.getenv("ADMIN_SECRET", "")
