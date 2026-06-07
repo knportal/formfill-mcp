@@ -49,6 +49,25 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [infra] — 2026-06-07
+
+### Fixed
+
+**Infrastructure**
+
+- Set `FORMFILL_DATA_DIR=/data` on Railway so the SQLite database is stored on the persistent volume and survives container restarts/redeploys.
+- Redeployed Cloudflare Worker with correct `FORMFILL_ORIGIN_URL` pointing to the Railway backend; MCP endpoint at `https://formfill.plenitudo.ai/mcp` is now live.
+
+**Stripe**
+
+- Updated webhook destination URL from the (down) Cloudflare Worker subdomain to the Railway backend directly (`https://formfill-mcp-production.up.railway.app/stripe-webhook`).
+- Added `customer.subscription.created` to webhook subscribed events — this event was missing, which meant new Pro subscriptions never triggered an automatic key upgrade.
+- Removed unused `checkout.session.completed` event subscription.
+- Backfilled Stripe customer metadata (`formfill_api_key`) for existing subscriber so cancellation webhooks can correctly downgrade their key.
+- Linked existing Pro key to Stripe customer ID in the Railway database.
+
+---
+
 ## [Unreleased]
 
 - Signature field support
