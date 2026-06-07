@@ -1264,6 +1264,7 @@ if __name__ == "__main__":
 
             # Look up the Stripe customer ID for this key
             try:
+                from config import KEYS_DB
                 conn = _sqlite3.connect(KEYS_DB)
                 conn.row_factory = _sqlite3.Row
                 row = conn.execute(
