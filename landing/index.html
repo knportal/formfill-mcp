@@ -388,6 +388,16 @@
 
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFaq(this)">
+          The /mcp endpoint shows "Not Acceptable" in my browser — is it broken? <span class="faq-arrow">▾</span>
+        </button>
+        <div class="faq-a">
+          <p>No — that's correct behavior. The MCP endpoint requires an MCP client (Claude Desktop, Cursor, Cline) that sends the right protocol headers. Browsers send <code>Accept: text/html</code>, which the server rejects by design.</p>
+          <p style="margin-top:0.5rem">To confirm the server is up, hit <code>GET https://formfill.plenitudo.ai/health</code> — that returns <code>{"status":"ok"}</code> from any browser or curl.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
           How do I check if the remote server is up? <span class="faq-arrow">▾</span>
         </button>
         <div class="faq-a">
@@ -442,6 +452,7 @@
     <div style="border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; max-width: 520px; margin: 0 auto; text-align:left;">
       <p style="font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem;">Remote MCP Endpoint</p>
       <code style="font-family: var(--mono); font-size: 0.85rem; color: var(--accent-light); word-break: break-all;">https://formfill.plenitudo.ai/mcp</code>
+      <p style="margin-top: 0.6rem; font-size: 0.78rem; color: var(--muted);">Opening this URL in a browser shows "Not Acceptable" — that's normal. It only responds to MCP clients (Claude Desktop, Cursor, Cline).</p>
     </div>
   </section>
 
