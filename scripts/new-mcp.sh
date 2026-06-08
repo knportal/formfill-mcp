@@ -2,35 +2,38 @@
 # new-mcp.sh — Bootstrap a new MCP project from this template.
 #
 # Usage:
-#   ./scripts/new-mcp.sh my-mcp-name
+#   new-mcp my-mcp-name
 #
 # Prerequisites (install once):
 #   brew install railway          # Railway CLI
 #   npm install -g wrangler       # Cloudflare CLI
 #   brew install gh               # GitHub CLI
 #
-# Required env vars (set in your shell or .env before running):
-#   STRIPE_SECRET_KEY             # sk_live_... or sk_test_...
-#   STRIPE_WEBHOOK_SECRET         # whsec_... (create after deploy)
-#   FORMFILL_ORIGIN_URL           # https://<your-railway-app>.up.railway.app
-#   CLOUDFLARE_API_TOKEN          # Pages + Workers Edit token
-#   CLOUDFLARE_ACCOUNT_ID         # from wrangler whoami
+# Credentials are read automatically from ~/.mcp-secrets.
+# Run setup-mcp-secrets to populate that file.
 #
 # What this script does:
-#   1. Creates a new GitHub repo from this template
-#   2. Clones it locally
-#   3. Creates a Railway project and sets all env vars
-#   4. Deploys the Cloudflare Worker and sets its FORMFILL_ORIGIN_URL secret
-#   5. Creates a Cloudflare Pages project for the landing page
-#   6. Adds all secrets to GitHub Actions
-#   7. Prints a checklist of remaining manual steps
+#   1. Loads credentials from ~/.mcp-secrets
+#   2. Creates a new GitHub repo from this template
+#   3. Clones it locally
+#   4. Creates a Railway project and sets all env vars
+#   5. Deploys the Cloudflare Worker and sets its origin secret
+#   6. Creates a Cloudflare Pages project for the landing page
+#   7. Adds all secrets to GitHub Actions via setup-mcp-secrets
+#   8. Prints a checklist of remaining manual steps
 
 set -euo pipefail
+
+# ── Load credentials from ~/.mcp-secrets ──────────────────────────────────────
+SECRETS_FILE="${HOME}/.mcp-secrets"
+[[ -f "$SECRETS_FILE" ]] || { echo "~/.mcp-secrets not found. Run: setup-mcp-secrets"; exit 1; }
+# shellcheck disable=SC1090
+source "$SECRETS_FILE"
 
 # ── Args ──────────────────────────────────────────────────────────────────────
 NAME="${1:-}"
 if [[ -z "$NAME" ]]; then
-  echo "Usage: $0 <project-name>"
+  echo "Usage: new-mcp <project-name>"
   exit 1
 fi
 
@@ -54,13 +57,12 @@ require gh       "brew install gh"
 require railway  "brew install railway"
 require wrangler "npm install -g wrangler"
 
-[[ -n "${STRIPE_SECRET_KEY:-}" ]]      || die "STRIPE_SECRET_KEY not set"
-[[ -n "${FORMFILL_ORIGIN_URL:-}" ]]    || warn "FORMFILL_ORIGIN_URL not set — set it after Railway deploy"
-[[ -n "${CLOUDFLARE_API_TOKEN:-}" ]]   || die "CLOUDFLARE_API_TOKEN not set"
-[[ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]]  || die "CLOUDFLARE_ACCOUNT_ID not set"
+[[ -n "${STRIPE_SECRET_KEY:-}" && "${STRIPE_SECRET_KEY}" != *"..."* ]] || die "STRIPE_SECRET_KEY not set in ~/.mcp-secrets"
+[[ -n "${CLOUDFLARE_API_TOKEN:-}" && "${CLOUDFLARE_API_TOKEN}" != *"..."* ]] || die "CLOUDFLARE_API_TOKEN not set in ~/.mcp-secrets"
+[[ -n "${CLOUDFLARE_ACCOUNT_ID:-}" && "${CLOUDFLARE_ACCOUNT_ID}" != *"..."* ]] || die "CLOUDFLARE_ACCOUNT_ID not set in ~/.mcp-secrets"
 
 STRIPE_WEBHOOK_SECRET="${STRIPE_WEBHOOK_SECRET:-}"
-ORIGIN_URL="${FORMFILL_ORIGIN_URL:-}"
+ORIGIN_URL="${ORIGIN_URL:-}"
 
 # ── 1. Create GitHub repo from template ───────────────────────────────────────
 info "Creating GitHub repo ${GITHUB_ORG}/${NAME} from template ${TEMPLATE_REPO}..."
@@ -122,11 +124,10 @@ CLOUDFLARE_ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID}" \
 wrangler pages deploy landing --project-name "${LANDING_PROJECT}"
 ok "Landing page deployed"
 
-# ── 5. GitHub Actions secrets ─────────────────────────────────────────────────
-info "Adding GitHub Actions secrets..."
-gh secret set CLOUDFLARE_API_TOKEN    --body "${CLOUDFLARE_API_TOKEN}"
-gh secret set CLOUDFLARE_ACCOUNT_ID   --body "${CLOUDFLARE_ACCOUNT_ID}"
-ok "GitHub secrets set — future pushes will auto-deploy Worker"
+# ── 5. GitHub Actions secrets (via setup-mcp-secrets) ────────────────────────
+info "Setting all GitHub Actions secrets..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+"${SCRIPT_DIR}/setup-secrets.sh" "${GITHUB_ORG}/${NAME}"
 
 # ── 6. Done ───────────────────────────────────────────────────────────────────
 echo ""
