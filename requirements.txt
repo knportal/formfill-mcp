@@ -2,7 +2,7 @@
 # Install with: pip install -r requirements.txt
 
 # MCP server framework
-mcp==1.26.0
+mcp==1.27.2
 
 # PDF reading and writing
 pypdf==6.9.2
