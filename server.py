@@ -1195,14 +1195,45 @@ if __name__ == "__main__":
                 return JSONResponse({"error": "api_key is required"}, status_code=400)
 
             try:
-                session = _stripe.checkout.Session.create(
-                    mode="subscription",
-                    line_items=[{"price": STRIPE_PRO_PRICE_ID, "quantity": 1}],
-                    customer_email=email or None,
-                    metadata={"formfill_api_key": api_key},
-                    success_url="https://formfill.plenitudo.ai/success?session_id={CHECKOUT_SESSION_ID}",
-                    cancel_url="https://formfill.plenitudo.ai/pricing",
-                )
+                # Dedupe: passing customer_email makes Checkout create a brand-new
+                # customer every time, so a returning email ends up double-billed.
+                # Reuse the existing customer record instead, and refuse checkout
+                # outright if any record for this email already has an active Pro
+                # subscription. An email can map to multiple customer records
+                # (pre-dedupe history), so scan them all.
+                existing_customer_id = None
+                if email:
+                    for cust in _stripe.Customer.list(email=email, limit=10).data:
+                        if existing_customer_id is None:
+                            existing_customer_id = cust.id
+                        subs = _stripe.Subscription.list(
+                            customer=cust.id, status="active", limit=10
+                        ).data
+                        for sub in subs:
+                            for item in sub["items"]["data"]:
+                                if item["price"]["id"] == STRIPE_PRO_PRICE_ID:
+                                    return JSONResponse(
+                                        {
+                                            "error": "This email already has an active "
+                                            "FormFill Pro subscription. Manage it from "
+                                            "the billing portal instead of subscribing again."
+                                        },
+                                        status_code=409,
+                                    )
+
+                checkout_kwargs = {
+                    "mode": "subscription",
+                    "line_items": [{"price": STRIPE_PRO_PRICE_ID, "quantity": 1}],
+                    "metadata": {"formfill_api_key": api_key},
+                    "success_url": "https://formfill.plenitudo.ai/success?session_id={CHECKOUT_SESSION_ID}",
+                    "cancel_url": "https://formfill.plenitudo.ai/pricing",
+                }
+                if existing_customer_id:
+                    checkout_kwargs["customer"] = existing_customer_id
+                elif email:
+                    checkout_kwargs["customer_email"] = email
+
+                session = _stripe.checkout.Session.create(**checkout_kwargs)
             except Exception as exc:
                 logger.error("Stripe checkout creation failed: %s", exc)
                 return JSONResponse({"error": "Failed to create checkout session"}, status_code=500)
