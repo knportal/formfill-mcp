@@ -1,3 +1,5 @@
+> **Retired (November 2026).** This project is no longer maintained and the hosted service is being shut down. The source remains available under its license for anyone who wants to self-host or fork it.
+
 <div align="center">
   <img src="assets/logo.png" alt="FormFill MCP" width="120" />
   <h1>FormFill MCP</h1>
